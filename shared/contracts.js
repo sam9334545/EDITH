@@ -34,7 +34,7 @@ export const ACTIVITY_EVENT_TYPES = Object.freeze({
 });
 export const TRUST_LEVELS = Object.freeze({ HIGH: 'high', MODERATE: 'moderate', LOW: 'low', CRITICAL: 'critical' });
 export const ERROR_CODES = Object.freeze([
-  'VALIDATION_ERROR', 'APP_NOT_FOUND', 'RESOURCE_INVALID', 'RECOMMENDATION_NOT_FOUND', 'INTERNAL_ERROR',
+  'VALIDATION_ERROR', 'APP_NOT_FOUND', 'RESOURCE_INVALID', 'RECOMMENDATION_NOT_FOUND', 'INTERNAL_ERROR', 'RASP_VIOLATION',
 ]);
 
 // Trust-score constants (single source of truth, owned by M4 logic, defined here)

@@ -281,9 +281,10 @@ describe('Feature 6: Access Control Backend Module', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'suspended', trustScore: 100 }),
       });
-      assert.equal(res.status, 400);
+      // RASP now intercepts protected-field tampering (trustScore) before validation runs.
+      assert.equal(res.status, 403);
       const json = await res.json();
-      assert.equal(json.error.code, 'VALIDATION_ERROR');
+      assert.equal(json.error.code, 'RASP_VIOLATION');
     });
 
     it('rejects invalid resource type with 400 RESOURCE_INVALID', async () => {

@@ -2,8 +2,15 @@ import { Router } from 'express';
 import { ok, fail } from '../../shared/contracts.js';
 import { store } from '../store/index.js';
 import { applyRecommendation } from '../services/permissionService.js';
+import { raspParamGuard } from '../middleware/raspMiddleware.js';
 
 const router = Router();
+
+// Route parameter RASP inspection guard
+if (typeof raspParamGuard === 'function') {
+  router.param('appId', raspParamGuard);
+  router.param('id', raspParamGuard);
+}
 
 /**
  * Controller: GET recommendations for an application.
@@ -57,4 +64,3 @@ router.post(['/:id/apply', '/recommendations/:id/apply'], applyRecommendationHan
 
 export { router };
 export default router;
-

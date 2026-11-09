@@ -299,11 +299,11 @@ describe('Feature 1: Centralized Permission Management', () => {
         body: JSON.stringify({ resource: 'camera', enabled: true, trustScore: 100 }),
       });
 
-      assert.equal(res.status, 400);
+      // RASP now intercepts protected-field tampering (trustScore) before validation runs.
+      assert.equal(res.status, 403);
       const json = await res.json();
       assert.equal(json.success, false);
-      assert.equal(json.error.code, 'VALIDATION_ERROR');
-      assert.ok(json.error.message.includes('Unsupported fields'));
+      assert.equal(json.error.code, 'RASP_VIOLATION');
     });
 
     it('returns 404 APP_NOT_FOUND when updating permission for unknown application', async () => {

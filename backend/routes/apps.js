@@ -11,8 +11,14 @@ import {
   updatePermission,
   updateStatus,
 } from '../services/permissionService.js';
+import { raspParamGuard } from '../middleware/raspMiddleware.js';
 
 const router = Router();
+
+// Route parameter RASP inspection guard
+if (typeof raspParamGuard === 'function') {
+  router.param('id', raspParamGuard);
+}
 
 /**
  * GET /api/apps
@@ -109,4 +115,3 @@ router.patch('/:id/status', (req, res) => {
 });
 
 export default router;
-
