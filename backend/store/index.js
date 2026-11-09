@@ -1,11 +1,9 @@
 // M1 In-Memory Store for E.D.I.T.H.
-// Unified store for apps, events, alerts, recommendations, history, and trustHistory.
 import { seedData } from '../data/seedData.js';
 import { trustLevelFor } from '../../shared/contracts.js';
 
 let state = seedData();
 
-// Internal clock that can be overridden/stepped during simulations or tests
 export const clock = {
   now: () => new Date().toISOString(),
 };
@@ -88,7 +86,7 @@ export const store = {
       timestamp: timestamp || this.clock.now(),
       metadata,
     };
-    state.history.unshift(entry); // newest first
+    state.history.unshift(entry);
     return entry;
   },
 
@@ -106,7 +104,7 @@ export const store = {
       id: event.id || this.nextId('evt'),
       timestamp: event.timestamp || this.clock.now(),
     };
-    state.events.unshift(entry); // newest first
+    state.events.unshift(entry);
     return entry;
   },
 
@@ -129,7 +127,7 @@ export const store = {
       recommendationId: alert.recommendationId || null,
       acknowledged: alert.acknowledged ?? false,
     };
-    state.alerts.unshift(entry); // newest first
+    state.alerts.unshift(entry);
     return entry;
   },
 
@@ -157,7 +155,7 @@ export const store = {
       id: rec.id || this.nextId('rec'),
       createdAt: rec.createdAt || this.clock.now(),
     };
-    state.recommendations.unshift(entry); // newest first
+    state.recommendations.unshift(entry);
     return entry;
   },
 
@@ -184,7 +182,7 @@ export const store = {
       id: th.id || this.nextId('ts'),
       timestamp: th.timestamp || this.clock.now(),
     };
-    state.trustHistory.unshift(entry); // newest first
+    state.trustHistory.unshift(entry);
     return entry;
   },
 

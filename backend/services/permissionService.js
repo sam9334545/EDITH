@@ -8,10 +8,6 @@ import {
 } from '../../shared/contracts.js';
 import { store } from '../store/index.js';
 
-/**
- * Checks whether an app is allowed to access a resource.
- * Pure function: Application, resource -> { allowed: boolean, reason: 'ok' | 'app_suspended' | 'permission_disabled' }
- */
 export function checkPermission(app, resource) {
   if (!app) {
     return { allowed: false, reason: 'app_not_found' };
@@ -33,9 +29,6 @@ export function checkPermission(app, resource) {
   return { allowed: true, reason: 'ok' };
 }
 
-/**
- * Formats an application entity with its derived trust level.
- */
 export function formatApp(app) {
   if (!app) return null;
   return {
@@ -264,9 +257,6 @@ export function updateStatus(appId, status) {
   return updateAppStatus(appId, status);
 }
 
-/**
- * Applies a security recommendation (M2/M4 feature).
- */
 export function applyRecommendation(recommendationId) {
   const recommendations = store?.recommendations ||
     (typeof store?.getState === 'function' ? store.getState().recommendations : []) || [];
