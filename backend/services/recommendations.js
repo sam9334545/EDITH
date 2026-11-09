@@ -10,9 +10,9 @@ import { store } from '../store/index.js';
  * Generates recommendations from newly detected security alerts.
  * Pure/persisted: app, alerts, events -> Recommendation[]
  *
- * @param {Object} app - Application entity
- * @param {Array<Object>} alerts - Array of SecurityAlert objects
- * @param {Array<Object>} [events] - Array of AccessEvent objects
+ * @param {Object} app Application entity
+ * @param {Array<Object>} alerts Array of SecurityAlert objects
+ * @param {Array<Object>} [events] Array of AccessEvent objects
  * @returns {Array<Object>} Array of newly created Recommendation objects
  */
 export function generateRecommendations(app, alerts = [], events = []) {
@@ -116,4 +116,3 @@ export function generateRecommendations(app, alerts = [], events = []) {
 }
 
 export default { generateRecommendations };
-

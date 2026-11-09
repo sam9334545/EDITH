@@ -16,9 +16,9 @@ export function changeReasonFor(alert) {
 
 /**
  * Contract: calculateTrustScore(app, recentEvents, alerts)
- *   app          Application (uses app.trustScore as the previous score)
+ *   app         Application (uses app.trustScore as the previous score)
  *   recentEvents same-app events (unused in MVP: no recovery, penalties come from alerts only)
- *   alerts       NEW alerts only (deduped alerts must NOT be passed in -> no double penalty)
+ *   alerts      NEW alerts only (deduped alerts must NOT be passed in -> no double penalty)
  * Returns { previousScore, newScore, level, penalty, explanation[] }.
  * newScore = clamp(previousScore - sum(penalties), 0, 100).
  */

@@ -11,7 +11,7 @@ import { store } from '../store/index.js';
 import { checkPermission, formatApp } from './permissionService.js';
 import { createEvent } from './eventService.js';
 import { analyzeEvent } from './anomalyDetection.js';
-import { calculateTrustScore } from './trustScore.js';
+import { calculateTrustScore } from './trustScoreService.js';
 import { generateRecommendations } from './recommendations.js';
 
 /**
@@ -49,7 +49,7 @@ export async function processAccessRequest(payload) {
     decision,
   });
 
-  // If allowed, update lastAccessedAt (Saima's Feature)
+  // If allowed, update lastAccessedAt
   if (isAllowed && app.permissions?.[payload.resource]) {
     app.permissions[payload.resource].lastAccessedAt = event.timestamp;
   }
@@ -59,7 +59,7 @@ export async function processAccessRequest(payload) {
   const historyList = store?.history || (typeof store?.getState === 'function' ? store.getState().history : []) || [];
   const trustHistory = store?.trustHistory || (typeof store?.getState === 'function' ? store.getState().trustHistory : []) || [];
 
-  // --- SAIMA'S FEATURE: Record Access Activity History ---
+  // --- Feature 7: Record Access Activity History ---
   const actId = typeof store?.nextId === 'function' 
     ? store.nextId('act') 
     : `act_${String((historyList.length + 1)).padStart(4, '0')}`;
@@ -77,7 +77,6 @@ export async function processAccessRequest(payload) {
       ...(denialReason ? { denialReason } : {}),
     },
   });
-  // --------------------------------------------------------
 
   // 6. Analyze event (M4 anomaly detection)
   const analysis = analyzeEvent(event, app, allEvents);
@@ -153,7 +152,7 @@ export async function processAccessRequest(payload) {
     }
   }
 
-  // 8. Calculate Trust Score (Khyati's Feature)
+  // 8. Calculate Trust Score
   let trustResult = calculateTrustScore(app, allEvents, alertsCreated);
   if (alertsCreated.length > 0) {
     const previousScore = app.trustScore;
@@ -197,10 +196,30 @@ export async function processAccessRequest(payload) {
     });
   }
 
-  // 9. Generate Recommendations (Your Feature)
+  // 9. Generate Recommendations
   let newRecommendations = [];
   if (alertsCreated.length > 0) {
     newRecommendations = generateRecommendations(app, alertsCreated, allEvents);
+    for (const rec of newRecommendations) {
+      const recActId = typeof store?.nextId === 'function'
+        ? store.nextId('act')
+        : `act_${String((historyList.length + 1)).padStart(4, '0')}`;
+
+      historyList.push({
+        id: recActId,
+        appId: app.id,
+        eventType: ACTIVITY_EVENT_TYPES.RECOMMENDATION_CREATED,
+        description: `Recommendation: ${rec.title}`,
+        timestamp: rec.createdAt,
+        metadata: {
+          recommendationId: rec.id,
+          type: rec.type,
+          suggestedAction: rec.suggestedAction,
+          resource: rec.resource,
+          alertId: rec.alertId,
+        },
+      });
+    }
   }
 
   // 10. Return standard aggregated result
@@ -216,7 +235,7 @@ export async function processAccessRequest(payload) {
     },
     recommendations: newRecommendations,
     allowed: isAllowed,
-    denialReason: denialReason
+    denialReason: denialReason,
   };
 }
 

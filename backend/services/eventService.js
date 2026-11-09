@@ -1,8 +1,8 @@
 import {
   RESOURCE_TYPES,
   ACCESS_STATUS,
-  ACTIVITY_EVENT_TYPES,
   APPLICATION_STATUS,
+  ACTIVITY_EVENT_TYPES,
   isIsoTimestamp,
 } from '../../shared/contracts.js';
 import { store } from '../store/index.js';
@@ -11,11 +11,11 @@ import { store } from '../store/index.js';
  * Creates and records an access event and its corresponding activity history.
  *
  * @param {Object} params
- * @param {Object} params.app - Application entity
- * @param {string} params.resource - Resource name (must be in RESOURCE_TYPES)
- * @param {string} [params.reason] - Request reason description
- * @param {string} [params.timestamp] - ISO 8601 timestamp
- * @param {Object|string|boolean} params.decision - Access decision
+ * @param {Object} params.app Application entity
+ * @param {string} params.resource Resource name (must be in RESOURCE_TYPES)
+ * @param {string} [params.reason] Request reason description
+ * @param {string} [params.timestamp] ISO 8601 timestamp
+ * @param {Object|string|boolean} params.decision Access decision
  * @returns {Object} Created AccessEvent
  */
 export function createEvent({ app, resource, reason, timestamp, decision }) {
@@ -106,7 +106,7 @@ export function createEvent({ app, resource, reason, timestamp, decision }) {
     eventsTarget.push(event);
   }
 
-  // 5. Write corresponding ActivityHistory entry
+  // 5. Write corresponding ActivityHistory entry (Feature 7)
   const historyTarget = store?.history || (typeof store?.getState === 'function' ? store.getState().history : null);
   const nextActId = typeof store?.nextId === 'function'
     ? store.nextId('act')
@@ -141,4 +141,3 @@ export function createEvent({ app, resource, reason, timestamp, decision }) {
 }
 
 export default { createEvent };
-

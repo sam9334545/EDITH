@@ -1,32 +1,20 @@
 import { Router } from 'express';
-import { ok } from '../../shared/contracts.js';
-import appsRouter from './apps.js';
-import eventsRouter from './events.js';
-import recommendationsRouter from './recommendations.js';
+import healthRoutes from './healthRoutes.js';
+import appRoutes from './appRoutes.js';
+import eventRoutes from './eventRoutes.js';
+import securityRoutes from './securityRoutes.js';
+import historyRoutes from './historyRoutes.js';
+import statsRoutes from './statsRoutes.js';
+import demoRoutes from './demoRoutes.js';
 
 const router = Router();
 
-/**
- * GET /api/health
- * Returns server health status, uptime, and simulated environment indicator.
- */
-router.get(['/health', '/api/health'], (req, res) => {
-  return res.json(
-    ok({
-      status: 'ok',
-      uptime: process.uptime(),
-      simulated: true,
-    })
-  );
-});
-
-// Mount M2 Apps router
-router.use('/apps', appsRouter);
-
-// Mount M3 Events router
-router.use('/events', eventsRouter);
-
-// Mount M4 Recommendations router
-router.use('/security/recommendations', recommendationsRouter);
+router.use('/health', healthRoutes);
+router.use('/apps', appRoutes);
+router.use('/events', eventRoutes);
+router.use('/security', securityRoutes);
+router.use('/history', historyRoutes);
+router.use('/stats', statsRoutes);
+router.use('/demo', demoRoutes);
 
 export default router;

@@ -132,3 +132,10 @@ export function updateStatus(req, res) {
     return res.status(500).json(fail('INTERNAL_ERROR', 'Internal server error'));
   }
 }
+
+export default {
+  getApps,
+  getAppById,
+  updatePermission,
+  updateStatus,
+};

@@ -1,50 +1,76 @@
 // M1 In-Memory Store for E.D.I.T.H.
-import { seedData } from '../data/seedData.js';
+import seedData from '../data/seedData.js';
 import { trustLevelFor } from '../../shared/contracts.js';
 
-let state = seedData();
-
-export const clock = {
-  now: () => new Date().toISOString(),
-};
-
-export const store = {
-  clock,
-
-  getState() {
-    return state;
-  },
+class DataStore {
+  constructor() {
+    this.resetToSeed();
+  }
 
   resetToSeed() {
-    state = seedData();
-    return state;
-  },
+    const seed = seedData();
+    // Deep clone to prevent mutations from leaking across resets
+    this.apps = JSON.parse(JSON.stringify(seed.apps));
+    this.events = JSON.parse(JSON.stringify(seed.events));
+    this.alerts = JSON.parse(JSON.stringify(seed.alerts));
+    this.recommendations = JSON.parse(JSON.stringify(seed.recommendations));
+    this.history = JSON.parse(JSON.stringify(seed.history));
+    this.trustHistory = JSON.parse(JSON.stringify(seed.trustHistory));
+    this.counters = JSON.parse(JSON.stringify(seed.counters));
+    this._mockClock = null;
+    return this.getState();
+  }
 
   nextId(prefix) {
-    if (!state.counters[prefix]) {
-      state.counters[prefix] = 0;
+    if (!this.counters[prefix] && this.counters[prefix] !== 0) {
+      this.counters[prefix] = 0;
     }
-    state.counters[prefix] += 1;
-    return `${prefix}_${String(state.counters[prefix]).padStart(4, '0')}`;
-  },
+    this.counters[prefix] += 1;
+    return `${prefix}_${String(this.counters[prefix]).padStart(4, '0')}`;
+  }
+
+  clock = {
+    now: () => this._mockClock || new Date().toISOString(),
+    setMockTime: (isoString) => {
+      this._mockClock = isoString;
+    },
+    clearMockTime: () => {
+      this._mockClock = null;
+    },
+  };
+
+  getState() {
+    return {
+      apps: this.apps.map((app) => ({
+        ...app,
+        permissions: Object.fromEntries(
+          Object.entries(app.permissions).map(([k, v]) => [k, { ...v }])
+        ),
+        trustLevel: trustLevelFor(app.trustScore),
+      })),
+      events: this.events,
+      alerts: this.alerts,
+      recommendations: this.recommendations,
+      history: this.history,
+      trustHistory: this.trustHistory,
+      counters: this.counters,
+    };
+  }
+
+  findAppById(appId) {
+    return this.apps.find((a) => a.id === appId) || null;
+  }
 
   getApps(statusFilter = null) {
-    let list = state.apps.map((app) => ({
-      ...app,
-      permissions: Object.fromEntries(
-        Object.entries(app.permissions).map(([k, v]) => [k, { ...v }])
-      ),
-      trustLevel: trustLevelFor(app.trustScore),
-    }));
-
+    let list = this.getState().apps;
     if (statusFilter) {
       list = list.filter((a) => a.status === statusFilter);
     }
     return list;
-  },
+  }
 
   getApp(id) {
-    const app = state.apps.find((a) => a.id === id);
+    const app = this.apps.find((a) => a.id === id);
     if (!app) return null;
     return {
       ...app,
@@ -53,13 +79,13 @@ export const store = {
       ),
       trustLevel: trustLevelFor(app.trustScore),
     };
-  },
+  }
 
   updateApp(id, updater) {
-    const idx = state.apps.findIndex((a) => a.id === id);
+    const idx = this.apps.findIndex((a) => a.id === id);
     if (idx === -1) return null;
 
-    const current = state.apps[idx];
+    const current = this.apps[idx];
     const updated = updater({
       ...current,
       permissions: Object.fromEntries(
@@ -67,7 +93,7 @@ export const store = {
       ),
     });
 
-    state.apps[idx] = updated;
+    this.apps[idx] = updated;
     return {
       ...updated,
       permissions: Object.fromEntries(
@@ -75,7 +101,7 @@ export const store = {
       ),
       trustLevel: trustLevelFor(updated.trustScore),
     };
-  },
+  }
 
   addHistory({ appId, eventType, description, metadata = {}, timestamp = null }) {
     const entry = {
@@ -86,17 +112,17 @@ export const store = {
       timestamp: timestamp || this.clock.now(),
       metadata,
     };
-    state.history.unshift(entry);
+    this.history.unshift(entry);
     return entry;
-  },
+  }
 
   getHistory(filter = {}) {
-    let list = [...state.history];
+    let list = [...this.history];
     if (filter.appId) list = list.filter((h) => h.appId === filter.appId);
     if (filter.type) list = list.filter((h) => h.eventType === filter.type);
     if (filter.limit) list = list.slice(0, filter.limit);
     return list;
-  },
+  }
 
   addEvent(event) {
     const entry = {
@@ -104,19 +130,19 @@ export const store = {
       id: event.id || this.nextId('evt'),
       timestamp: event.timestamp || this.clock.now(),
     };
-    state.events.unshift(entry);
+    this.events.unshift(entry);
     return entry;
-  },
+  }
 
   getEvents(filter = {}) {
-    let list = [...state.events];
+    let list = [...this.events];
     if (filter.appId) list = list.filter((e) => e.appId === filter.appId);
     if (filter.resource) list = list.filter((e) => e.resource === filter.resource);
     if (filter.status) list = list.filter((e) => e.status === filter.status);
     if (typeof filter.suspicious === 'boolean') list = list.filter((e) => e.suspicious === filter.suspicious);
     if (filter.limit) list = list.slice(0, filter.limit);
     return list;
-  },
+  }
 
   addAlert(alert) {
     const entry = {
@@ -127,27 +153,27 @@ export const store = {
       recommendationId: alert.recommendationId || null,
       acknowledged: alert.acknowledged ?? false,
     };
-    state.alerts.unshift(entry);
+    this.alerts.unshift(entry);
     return entry;
-  },
+  }
 
   getAlerts(filter = {}) {
-    let list = [...state.alerts];
+    let list = [...this.alerts];
     if (filter.appId) list = list.filter((a) => a.appId === filter.appId);
     if (filter.severity) list = list.filter((a) => a.severity === filter.severity);
     if (typeof filter.acknowledged === 'boolean') list = list.filter((a) => a.acknowledged === filter.acknowledged);
     if (filter.limit) list = list.slice(0, filter.limit);
     return list;
-  },
+  }
 
   updateAlert(id, updater) {
-    const idx = state.alerts.findIndex((a) => a.id === id);
+    const idx = this.alerts.findIndex((a) => a.id === id);
     if (idx === -1) return null;
-    const current = state.alerts[idx];
+    const current = this.alerts[idx];
     const updated = updater({ ...current, relatedEventIds: [...current.relatedEventIds] });
-    state.alerts[idx] = updated;
+    this.alerts[idx] = updated;
     return updated;
-  },
+  }
 
   addRecommendation(rec) {
     const entry = {
@@ -155,26 +181,26 @@ export const store = {
       id: rec.id || this.nextId('rec'),
       createdAt: rec.createdAt || this.clock.now(),
     };
-    state.recommendations.unshift(entry);
+    this.recommendations.unshift(entry);
     return entry;
-  },
+  }
 
   getRecommendations(filter = {}) {
-    let list = [...state.recommendations];
+    let list = [...this.recommendations];
     if (filter.appId) list = list.filter((r) => r.appId === filter.appId);
     if (filter.status) list = list.filter((r) => r.status === filter.status);
     if (filter.limit) list = list.slice(0, filter.limit);
     return list;
-  },
+  }
 
   updateRecommendation(id, updater) {
-    const idx = state.recommendations.findIndex((r) => r.id === id);
+    const idx = this.recommendations.findIndex((r) => r.id === id);
     if (idx === -1) return null;
-    const current = state.recommendations[idx];
+    const current = this.recommendations[idx];
     const updated = updater({ ...current });
-    state.recommendations[idx] = updated;
+    this.recommendations[idx] = updated;
     return updated;
-  },
+  }
 
   addTrustHistory(th) {
     const entry = {
@@ -182,16 +208,17 @@ export const store = {
       id: th.id || this.nextId('ts'),
       timestamp: th.timestamp || this.clock.now(),
     };
-    state.trustHistory.unshift(entry);
+    this.trustHistory.unshift(entry);
     return entry;
-  },
+  }
 
   getTrustHistory(filter = {}) {
-    let list = [...state.trustHistory];
+    let list = [...this.trustHistory];
     if (filter.appId) list = list.filter((t) => t.appId === filter.appId);
     if (filter.limit) list = list.slice(0, filter.limit);
     return list;
-  },
-};
+  }
+}
 
+export const store = new DataStore();
 export default store;
