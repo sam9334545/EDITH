@@ -1,0 +1,14 @@
+{
+  "name": "edith-root",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "E.D.I.T.H. - Enhanced Digital Identity, Trust & Heuristics",
+  "scripts": {
+    "start:backend": "cd backend && npm start",
+    "dev:backend": "cd backend && npm run dev",
+    "test:backend": "cd backend && npm test",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:frontend": "cd frontend && npm run build"
+  }
+}
