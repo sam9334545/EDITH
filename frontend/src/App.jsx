@@ -764,23 +764,15 @@ function App() {
           <span className="brand-mark"><span /><span /><span /></span>
           <span className="brand-copy">
             <strong>E.D.I.T.H.</strong>
-            <small>E-Cell NIT Jamshedpur · NITSHACKS 9.0</small>
+            <small>Enhanced Digital Identity &amp; Heuristics</small>
           </span>
         </a>
         <div className="topbar-tools">
-          <span className="environment-tag"><i />NITSHACKS 9.0 · PS-2</span>
-          <a
-            href="https://www.ecellnitjsr.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="topbar-link"
-          >
-            ecellnitjsr.org ↗
-          </a>
+          <span className="environment-tag"><i />Simulated Environment</span>
           <button type="button" className="icon-button refresh-button" aria-label="Refresh data" onClick={() => setRefreshKey((current) => current + 1)}>
             <Icon>↻</Icon>
           </button>
-          <span className="profile-mark" aria-label="Workspace profile" title="NIT Jamshedpur">NIT</span>
+          <span className="profile-mark" aria-label="Workspace profile" title="Security Workspace">ED</span>
         </div>
       </header>
 
@@ -819,13 +811,13 @@ function App() {
       <footer className="page-footer-container">
         <div className="footer-grid">
           <div className="footer-brand">
-            <span className="footer-badge">NITSHACKS 9.0 · Problem Statement 2</span>
+            <span className="footer-badge">Security Intelligence &amp; Governance</span>
             <strong>E.D.I.T.H.</strong>
             <p>
               Enhanced Digital Identity, Trust &amp; Heuristics. Autonomous heuristic trust scoring, centralized permission governance, and behavioral security intelligence.
             </p>
             <p style={{ marginTop: '4px', fontSize: '11px', color: 'var(--charcoal-500)' }}>
-              Built for NITSHACKS 9.0, organized by the Entrepreneurship Cell (E-Cell), National Institute of Technology Jamshedpur.
+              Deterministic permission management and simulated runtime heuristic security telemetry.
             </p>
           </div>
           <div className="footer-col">
@@ -847,34 +839,18 @@ function App() {
             </ul>
           </div>
           <div className="footer-col">
-            <h4>Connect with E-Cell</h4>
+            <h4>Platform Telemetry</h4>
             <ul>
-              <li>
-                <a href="https://www.ecellnitjsr.org/" target="_blank" rel="noopener noreferrer">
-                  Official Website ↗
-                </a>
-              </li>
-              <li>
-                <a href="https://www.linkedin.com/company/ecaboratory/" target="_blank" rel="noopener noreferrer">
-                  LinkedIn ↗
-                </a>
-              </li>
-              <li>
-                <a href="https://www.instagram.com/ecell_nitjsr/" target="_blank" rel="noopener noreferrer">
-                  Instagram ↗
-                </a>
-              </li>
-              <li>
-                <a href="https://twitter.com/ecaboratory" target="_blank" rel="noopener noreferrer">
-                  Twitter / X ↗
-                </a>
-              </li>
+              <li><button type="button" onClick={() => navigate('overview')}>System Overview</button></li>
+              <li><button type="button" onClick={() => navigate('monitoring')}>Access Stream</button></li>
+              <li><button type="button" onClick={() => navigate('security')}>Anomaly Heuristics</button></li>
+              <li><button type="button" onClick={() => navigate('trust')}>Trust Computation</button></li>
             </ul>
           </div>
         </div>
         <div className="footer-bottom">
-          <span>© 2026 E-Cell NIT Jamshedpur · NITSHACKS 9.0. All rights reserved.</span>
-          <span>National Institute of Technology, Jamshedpur</span>
+          <span>© 2026 E.D.I.T.H. — Enhanced Digital Identity, Trust &amp; Heuristics. All rights reserved.</span>
+          <span>Simulated Security &amp; Heuristic Access Control</span>
         </div>
       </footer>
 
@@ -918,7 +894,7 @@ function OverviewPage({
   return (
     <>
       <PageHeader
-        eyebrow={`E-Cell NIT Jamshedpur · NITSHACKS 9.0 · ${new Intl.DateTimeFormat(undefined, { dateStyle: 'full' }).format(new Date())}`}
+        eyebrow={`Workspace Environment · ${new Intl.DateTimeFormat(undefined, { dateStyle: 'full' }).format(new Date())}`}
         title="Autonomous Digital Trust & Heuristic Security."
         description="Centralized permission governance, real-time access telemetry, and behavioral anomaly detection for modern applications."
         actions={(
