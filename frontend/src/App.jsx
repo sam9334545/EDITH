@@ -764,15 +764,23 @@ function App() {
           <span className="brand-mark"><span /><span /><span /></span>
           <span className="brand-copy">
             <strong>E.D.I.T.H.</strong>
-            <small>Digital trust, thoughtfully managed</small>
+            <small>E-Cell NIT Jamshedpur · NITSHACKS 9.0</small>
           </span>
         </a>
         <div className="topbar-tools">
-          <span className="environment-tag"><i />Simulated environment</span>
+          <span className="environment-tag"><i />NITSHACKS 9.0 · PS-2</span>
+          <a
+            href="https://www.ecellnitjsr.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="topbar-link"
+          >
+            ecellnitjsr.org ↗
+          </a>
           <button type="button" className="icon-button refresh-button" aria-label="Refresh data" onClick={() => setRefreshKey((current) => current + 1)}>
             <Icon>↻</Icon>
           </button>
-          <span className="profile-mark" aria-label="Workspace profile">ED</span>
+          <span className="profile-mark" aria-label="Workspace profile" title="NIT Jamshedpur">NIT</span>
         </div>
       </header>
 
@@ -808,9 +816,66 @@ function App() {
         {renderPage()}
       </main>
 
-      <footer className="page-footer">
-        <span>E.D.I.T.H. <i>·</i> Enhanced Digital Identity, Trust &amp; Heuristics</span>
-        <span>Monitoring is simulated. No device-level interception.</span>
+      <footer className="page-footer-container">
+        <div className="footer-grid">
+          <div className="footer-brand">
+            <span className="footer-badge">NITSHACKS 9.0 · Problem Statement 2</span>
+            <strong>E.D.I.T.H.</strong>
+            <p>
+              Enhanced Digital Identity, Trust &amp; Heuristics. Autonomous heuristic trust scoring, centralized permission governance, and behavioral security intelligence.
+            </p>
+            <p style={{ marginTop: '4px', fontSize: '11px', color: 'var(--charcoal-500)' }}>
+              Built for NITSHACKS 9.0, organized by the Entrepreneurship Cell (E-Cell), National Institute of Technology Jamshedpur.
+            </p>
+          </div>
+          <div className="footer-col">
+            <h4>Navigation</h4>
+            <ul>
+              <li><button type="button" onClick={() => navigate('overview')}>Overview</button></li>
+              <li><button type="button" onClick={() => navigate('applications')}>Applications</button></li>
+              <li><button type="button" onClick={() => navigate('permissions')}>Permissions</button></li>
+              <li><button type="button" onClick={() => navigate('monitoring')}>Monitoring</button></li>
+            </ul>
+          </div>
+          <div className="footer-col">
+            <h4>Security Hub</h4>
+            <ul>
+              <li><button type="button" onClick={() => navigate('security')}>Security Alerts</button></li>
+              <li><button type="button" onClick={() => navigate('trust')}>Trust Analysis</button></li>
+              <li><button type="button" onClick={() => navigate('recommendations')}>Recommendations</button></li>
+              <li><button type="button" onClick={() => navigate('history')}>Activity History</button></li>
+            </ul>
+          </div>
+          <div className="footer-col">
+            <h4>Connect with E-Cell</h4>
+            <ul>
+              <li>
+                <a href="https://www.ecellnitjsr.org/" target="_blank" rel="noopener noreferrer">
+                  Official Website ↗
+                </a>
+              </li>
+              <li>
+                <a href="https://www.linkedin.com/company/ecaboratory/" target="_blank" rel="noopener noreferrer">
+                  LinkedIn ↗
+                </a>
+              </li>
+              <li>
+                <a href="https://www.instagram.com/ecell_nitjsr/" target="_blank" rel="noopener noreferrer">
+                  Instagram ↗
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/ecaboratory" target="_blank" rel="noopener noreferrer">
+                  Twitter / X ↗
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div className="footer-bottom">
+          <span>© 2026 E-Cell NIT Jamshedpur · NITSHACKS 9.0. All rights reserved.</span>
+          <span>National Institute of Technology, Jamshedpur</span>
+        </div>
       </footer>
 
       {modal && (
@@ -853,9 +918,9 @@ function OverviewPage({
   return (
     <>
       <PageHeader
-        eyebrow={`Your workspace · ${new Intl.DateTimeFormat(undefined, { dateStyle: 'full' }).format(new Date())}`}
-        title="Your Digital Environment."
-        description="Monitor application permissions, access activity and trust from one place."
+        eyebrow={`E-Cell NIT Jamshedpur · NITSHACKS 9.0 · ${new Intl.DateTimeFormat(undefined, { dateStyle: 'full' }).format(new Date())}`}
+        title="Autonomous Digital Trust & Heuristic Security."
+        description="Centralized permission governance, real-time access telemetry, and behavioral anomaly detection for modern applications."
         actions={(
           <>
             <Button onClick={onReset} disabled={Boolean(busyAction)}>Reset demo</Button>
