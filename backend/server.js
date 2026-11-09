@@ -13,10 +13,31 @@ import routes from './routes/index.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+const rawOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+const allowedOrigins = rawOrigin.split(',').map((o) => o.trim());
 
 // Configure middleware
-app.use(cors({ origin: CLIENT_ORIGIN }));
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    try {
+      const url = new URL(origin);
+      if (
+        rawOrigin === '*' ||
+        allowedOrigins.includes('*') ||
+        allowedOrigins.includes(origin) ||
+        /\.vercel\.app$/.test(url.hostname) ||
+        /^localhost(:\d+)?$/.test(url.host)
+      ) {
+        return callback(null, true);
+      }
+    } catch {
+      // Fallback
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 // Mount the main router at /api
