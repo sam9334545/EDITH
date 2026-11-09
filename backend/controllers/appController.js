@@ -133,9 +133,14 @@ export function updateStatus(req, res) {
   }
 }
 
+export const updateAppPermission = updatePermission;
+export const updateAppStatus = updateStatus;
+
 export default {
   getApps,
   getAppById,
   updatePermission,
   updateStatus,
+  updateAppPermission,
+  updateAppStatus,
 };

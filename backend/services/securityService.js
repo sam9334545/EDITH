@@ -7,6 +7,9 @@ import { calculateTrustScore, changeReasonFor, buildScoreExplanation, penaltyFor
 const byNewest = (a, b) => (a.timestamp === b.timestamp ? (a.id < b.id ? 1 : -1) : a.timestamp < b.timestamp ? 1 : -1);
 
 function findApp(appId) {
+  if (Array.isArray(store.apps)) {
+    return store.apps.find((a) => a.id === appId) || null;
+  }
   return store.getState().apps.find((a) => a.id === appId) || null;
 }
 

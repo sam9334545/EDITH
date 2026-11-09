@@ -112,12 +112,12 @@ class DataStore {
       timestamp: timestamp || this.clock.now(),
       metadata,
     };
-    this.history.unshift(entry);
+    this.history.push(entry);
     return entry;
   }
 
   getHistory(filter = {}) {
-    let list = [...this.history];
+    let list = [...this.history].reverse();
     if (filter.appId) list = list.filter((h) => h.appId === filter.appId);
     if (filter.type) list = list.filter((h) => h.eventType === filter.type);
     if (filter.limit) list = list.slice(0, filter.limit);

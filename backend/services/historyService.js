@@ -1,11 +1,3 @@
-<<<<<<< HEAD
-// STUB: replace with M3 implementation
-import { store } from '../store/index.js';
-
-export function getHistory(filter = {}) {
-  return store.getHistory(filter);
-}
-=======
 import store from '../store/index.js';
 import { ACTIVITY_EVENT_TYPES, ok, fail } from '../../shared/contracts.js';
 
@@ -174,5 +166,6 @@ export class HistoryService {
 }
 
 export const historyService = new HistoryService();
+export const getHistory = (query = {}) => historyService.getHistory(query);
+export const recordActivity = (params) => historyService.recordActivity(params);
 export default historyService;
->>>>>>> local-sanobar-sana

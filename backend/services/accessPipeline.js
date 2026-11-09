@@ -11,13 +11,13 @@ import { store } from '../store/index.js';
 import { checkPermission, formatApp } from './permissionService.js';
 import { createEvent } from './eventService.js';
 import { analyzeEvent } from './anomalyDetection.js';
-import { calculateTrustScore } from './trustScoreService.js';
+import { calculateTrustScore } from './trustScore.js';
 import { generateRecommendations } from './recommendations.js';
 
 /**
  * Access pipeline orchestrator.
  */
-export async function processAccessRequest(payload) {
+export function processAccessRequest(payload) {
   // 1. Validate payload
   const validationError = validateAccessPayload(payload);
   if (validationError) {
@@ -59,24 +59,7 @@ export async function processAccessRequest(payload) {
   const historyList = store?.history || (typeof store?.getState === 'function' ? store.getState().history : []) || [];
   const trustHistory = store?.trustHistory || (typeof store?.getState === 'function' ? store.getState().trustHistory : []) || [];
 
-  // --- Feature 7: Record Access Activity History ---
-  const actId = typeof store?.nextId === 'function' 
-    ? store.nextId('act') 
-    : `act_${String((historyList.length + 1)).padStart(4, '0')}`;
-    
-  historyList.push({
-    id: actId,
-    appId: app.id,
-    eventType: isAllowed ? ACTIVITY_EVENT_TYPES.ACCESS_ALLOWED : ACTIVITY_EVENT_TYPES.ACCESS_DENIED,
-    description: `${payload.resource} access ${isAllowed ? 'allowed' : 'denied'}${denialReason ? ` (${denialReason})` : ''}`,
-    timestamp: event.timestamp,
-    metadata: {
-      appId: app.id,
-      resource: payload.resource,
-      eventId: event.id,
-      ...(denialReason ? { denialReason } : {}),
-    },
-  });
+
 
   // 6. Analyze event (M4 anomaly detection)
   const analysis = analyzeEvent(event, app, allEvents);
