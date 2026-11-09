@@ -20,6 +20,12 @@
 
 ---
 
+## 📸 Platform Overview
+
+![E.D.I.T.H. Security Dashboard](docs/screenshots/dashboard.png)
+
+---
+
 ## 📌 Executive Summary
 
 Modern cloud and enterprise workspaces rely on third-party integrations, OAuth integrations, background daemons, and microservices. However, traditional security models treat authorization as a **one-time gate** (granted at install time) and rely on periodic, out-of-band log audits. 
@@ -161,9 +167,7 @@ Enforces strict role- and resource-based authorization across all installed ente
 * **Zero-Trust Precedence**: Suspended applications cannot access resources even if individual permission flags are enabled.
 * **Instant Propagation & Audit**: Any grant or revoke instantly records an immutable `permission_granted` or `permission_revoked` event with timestamp and actor attribution.
 
-> **Screenshot Reference:**
-> `![Permission Governance Grid](docs/screenshots/permissions_grid.png)`
-> *(Location: Navigation -> Permissions. Interactive toggles with real-time feedback and audit verification).*
+![Permission Governance Grid](docs/screenshots/permissions.png)
 
 ---
 
@@ -174,9 +178,7 @@ A high-throughput telemetry stream recording every simulated runtime interaction
 * **Instant Visual Indicators**: Clear status badges indicating whether requests were `allowed` or `denied`.
 * **Multi-Dimensional Filters**: Filter activity on the fly by Application, Target Resource, Access Status, or Suspicious flags.
 
-> **Screenshot Reference:**
-> `![Access Activity Monitoring](docs/screenshots/access_monitoring.png)`
-> *(Location: Navigation -> Monitoring. Filterable real-time event logs with status badges and request timestamps).*
+![Access Activity Monitoring](docs/screenshots/monitoring.png)
 
 ---
 
@@ -198,9 +200,7 @@ $$\text{Trust Score} = \max\left(0, 100 - \sum \text{Penalties}\right)$$
 * 🟠 **Low Trust (40 – 59)**: Repeated violations; restricted access policies recommended.
 * 🔴 **Critical Trust (0 – 39)**: Active threat / severe attack detected; automatic application suspension recommended.
 
-> **Screenshot Reference:**
-> `![Trust Analysis Dashboard](docs/screenshots/trust_analysis.png)`
-> *(Location: Navigation -> Trust Analysis. Interactive score breakdown, mathematical penalty ledger, and historical trend chart).*
+![Trust Analysis Dashboard](docs/screenshots/trust.png)
 
 ---
 
@@ -213,9 +213,7 @@ The built-in behavioral engine inspects access patterns across five heuristic de
 * **Rule R4 (Repeated Restricted Access)**: Flags repeated unauthorized access attempts (threshold: 3 failures within 5 minutes).
 * **Rule R5 (Unusual Resource Combination)**: Detects suspicious multi-resource data harvesting (e.g. concurrent access to Camera + Microphone + Contacts within 30 seconds).
 
-> **Screenshot Reference:**
-> `![Security Alerts Management](docs/screenshots/security_alerts.png)`
-> *(Location: Navigation -> Security. Threat cards with severity chips, trigger rules, and acknowledgment workflows).*
+![Security Alerts Management](docs/screenshots/security.png)
 
 ---
 
@@ -250,9 +248,7 @@ Bridges the gap between threat detection and administrative action by suggesting
 * **One-Click Remediation**: Resolve complex incidents instantly by revoking compromised permissions or quarantining entire apps.
 * **Idempotency Guarantee**: Applying a recommendation multiple times safely returns the verified state without duplicate side-effects.
 
-> **Screenshot Reference:**
-> `![Recommendations View](docs/screenshots/recommendations.png)`
-> *(Location: Navigation -> Recommendations. Action cards with recommended steps, reasoning, and one-click Apply button).*
+![Recommendations View](docs/screenshots/recommendations.png)
 
 ---
 
@@ -284,9 +280,7 @@ Maintains an append-only ledger of all platform occurrences, formatted to meet e
   - `recommendation_created`, `recommendation_applied`
 * Every entry contains a deterministic UUID, ISO-8601 UTC timestamp, application reference, and contextual metadata.
 
-> **Screenshot Reference:**
-> `![Audit History Trail](docs/screenshots/audit_history.png)`
-> *(Location: Navigation -> History. Chronological audit stream with reverse-sorting, type filtering, and event JSON inspection).*
+![Audit History Trail](docs/screenshots/history.png)
 
 ---
 
