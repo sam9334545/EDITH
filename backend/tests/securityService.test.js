@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import express from 'express';
 import { store } from '../store/index.js';
 import { applyTrustPenalties, getTrustScoreView } from '../services/securityService.js';
-import securityRoutes from '../routes/securityRoutes.js';
+import securityRoutes from '../test-support/inMemorySecurityRoutes.js';
 
 const A1 = { id: 'alt_0001', appId: 'app_01', type: 'excessive_access', severity: 'high', timestamp: '2026-11-09T10:00:22.000Z' };
 const A2 = { id: 'alt_0002', appId: 'app_01', type: 'unauthorized_resource', severity: 'medium', timestamp: '2026-11-09T10:04:00.000Z' };

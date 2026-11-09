@@ -1118,13 +1118,28 @@ function MonitoringPage({ apps, events, errors, onSimulate, busyAction, simulati
   const [statusFilter, setStatusFilter] = useState('all');
   const [suspiciousFilter, setSuspiciousFilter] = useState('all');
   const [search, setSearch] = useState('');
-  const filtered = useMemo(() => events
-    .filter((event) => appFilter === 'all' || event.appId === appFilter)
-    .filter((event) => resourceFilter === 'all' || event.resource === resourceFilter)
-    .filter((event) => statusFilter === 'all' || event.status === statusFilter)
-    .filter((event) => suspiciousFilter === 'all' || String(Boolean(event.suspicious)) === suspiciousFilter)
+  const [queriedEvents, setQueriedEvents] = useState(events);
+  const [queryError, setQueryError] = useState(errors.events || null);
+  useEffect(() => {
+    let active = true;
+    api.getEvents({
+      appId: appFilter === 'all' ? undefined : appFilter,
+      resource: resourceFilter === 'all' ? undefined : resourceFilter,
+      status: statusFilter === 'all' ? undefined : statusFilter,
+      suspicious: suspiciousFilter === 'all' ? undefined : suspiciousFilter,
+      limit: 200,
+    }).then((data) => {
+      if (!active) return;
+      setQueriedEvents(data);
+      setQueryError(null);
+    }).catch((error) => {
+      if (active) setQueryError(error);
+    });
+    return () => { active = false; };
+  }, [appFilter, resourceFilter, statusFilter, suspiciousFilter, events]);
+  const filtered = useMemo(() => queriedEvents
     .filter((event) => `${event.reason} ${event.id} ${appName(apps, event.appId)}`.toLowerCase().includes(search.toLowerCase())), [
-    events, apps, appFilter, resourceFilter, statusFilter, suspiciousFilter, search,
+    queriedEvents, apps, search,
   ]);
   const pageData = usePagedRows(filtered, 10);
 
@@ -1134,7 +1149,7 @@ function MonitoringPage({ apps, events, errors, onSimulate, busyAction, simulati
       <SimulationPanel apps={apps} onSubmit={onSimulate} busy={busyAction === 'simulate'} />
       {simulationResult && <SimulationResultPanel result={simulationResult} />}
       <Panel title="Access event stream" eyebrow={`${events.length} recent records`}>
-        {errors.events ? <ErrorBlock error={errors.events} endpoint="Access events" /> : (
+        {queryError ? <ErrorBlock error={queryError} endpoint="Access events" /> : (
           <>
             <div className="filter-toolbar">
               <TextField label="Search events" value={search} onChange={(value) => { setSearch(value); pageData.setPage(0); }} placeholder="Reason, app or event ID" />
@@ -1244,10 +1259,25 @@ function SecurityPage({ apps, alerts, events, errors, onAcknowledge, onViewAlert
   const [severity, setSeverity] = useState('all');
   const [type, setType] = useState('all');
   const [acknowledged, setAcknowledged] = useState('all');
-  const filtered = alerts
-    .filter((alert) => severity === 'all' || alert.severity === severity)
-    .filter((alert) => type === 'all' || alert.type === type)
-    .filter((alert) => acknowledged === 'all' || String(Boolean(alert.acknowledged)) === acknowledged);
+  const [queriedAlerts, setQueriedAlerts] = useState(alerts);
+  const [queryError, setQueryError] = useState(errors.alerts || null);
+  useEffect(() => {
+    let active = true;
+    api.getAlerts({
+      severity: severity === 'all' ? undefined : severity,
+      type: type === 'all' ? undefined : type,
+      acknowledged: acknowledged === 'all' ? undefined : acknowledged,
+      limit: 200,
+    }).then((data) => {
+      if (!active) return;
+      setQueriedAlerts(data);
+      setQueryError(null);
+    }).catch((error) => {
+      if (active) setQueryError(error);
+    });
+    return () => { active = false; };
+  }, [severity, type, acknowledged, alerts]);
+  const filtered = queriedAlerts;
 
   return (
     <>
@@ -1257,7 +1287,7 @@ function SecurityPage({ apps, alerts, events, errors, onAcknowledge, onViewAlert
         <p>Alerts are produced by the backend security engine. This page never fabricates sample findings.</p>
       </div>
       <Panel title="Alert register" eyebrow={`${filtered.length} alerts`}>
-        {errors.alerts ? <ErrorBlock error={errors.alerts} endpoint="Security alerts" /> : (
+        {queryError ? <ErrorBlock error={queryError} endpoint="Security alerts" /> : (
           <>
             <div className="filter-toolbar compact">
               <SelectField label="Severity" value={severity} onChange={setSeverity} options={[
@@ -1418,15 +1448,29 @@ function HistoryPage({ apps, history, errors }) {
   const [appId, setAppId] = useState('all');
   const [type, setType] = useState('all');
   const [limit, setLimit] = useState('100');
-  const filtered = history
-    .filter((item) => appId === 'all' || item.appId === appId)
-    .filter((item) => type === 'all' || item.eventType === type)
-    .slice(0, Number(limit));
+  const [queriedHistory, setQueriedHistory] = useState(history);
+  const [queryError, setQueryError] = useState(errors.history || null);
+  useEffect(() => {
+    let active = true;
+    api.getHistory({
+      appId: appId === 'all' ? undefined : appId,
+      type: type === 'all' ? undefined : type,
+      limit: Number(limit),
+    }).then((data) => {
+      if (!active) return;
+      setQueriedHistory(data);
+      setQueryError(null);
+    }).catch((error) => {
+      if (active) setQueryError(error);
+    });
+    return () => { active = false; };
+  }, [appId, type, limit, history]);
+  const filtered = queriedHistory;
   return (
     <>
       <PageHeader eyebrow="Audit trail" title="Activity history" description="A chronological record of access, permission, trust and response activity." />
       <Panel title="Activity log" eyebrow={`${filtered.length} records`}>
-        {errors.history ? <ErrorBlock error={errors.history} endpoint="Activity history" /> : (
+        {queryError ? <ErrorBlock error={queryError} endpoint="Activity history" /> : (
           <>
             <div className="filter-toolbar compact">
               <SelectField label="Application" value={appId} onChange={setAppId} options={[

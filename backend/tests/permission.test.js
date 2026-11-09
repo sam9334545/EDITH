@@ -10,7 +10,7 @@ import {
   ACCESS_STATUS,
   ACTIVITY_EVENT_TYPES,
 } from '../../shared/contracts.js';
-import app from '../app.js';
+import app from '../test-support/inMemoryApp.js';
 
 describe('Feature 1: Centralized Permission Management', () => {
   let server;

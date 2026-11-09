@@ -6,12 +6,13 @@ import {
   updatePermission,
   updateStatus,
 } from '../controllers/appController.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
 
 const router = Router();
 
-router.get('/', getApps);
-router.get('/:id', getAppById);
-router.patch('/:id/permissions', updatePermission);
-router.patch('/:id/status', updateStatus);
+router.get('/', asyncHandler(getApps));
+router.get('/:id', asyncHandler(getAppById));
+router.patch('/:id/permissions', asyncHandler(updatePermission));
+router.patch('/:id/status', asyncHandler(updateStatus));
 
 export default router;

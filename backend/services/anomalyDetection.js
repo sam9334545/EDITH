@@ -74,6 +74,7 @@ export function analyzeEvent(event, app, recentEvents = []) {
   const window300s = eventTime - 300000;
   const deniedAttempts5m = appEvents.filter(
     (e) => e.status === ACCESS_STATUS.DENIED &&
+      e.denialReason === 'permission_disabled' &&
       new Date(e.timestamp).getTime() >= window300s
   );
 

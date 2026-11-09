@@ -1,9 +1,13 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import store from '../store/index.js';
-import { getHistory, getHistorySummary } from '../controllers/historyController.js';
-import { simulateEvents } from '../controllers/eventController.js';
-import { updateAppPermission, updateAppStatus } from '../controllers/appController.js';
+import {
+  getHistory,
+  getHistorySummary,
+  simulateEvents,
+  updateAppPermission,
+  updateAppStatus,
+} from '../test-support/inMemoryControllers.js';
 import { ACTIVITY_EVENT_TYPES } from '../../shared/contracts.js';
 
 function createMockRes() {

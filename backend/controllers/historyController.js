@@ -1,16 +1,13 @@
-import historyService from '../services/historyService.js';
 import { ok } from '../../shared/contracts.js';
+import * as mongoService from '../services/mongoService.js';
 
-export const getHistory = (req, res) => {
-  const result = historyService.getHistory(req.query);
-  if (!result.success) {
-    return res.status(400).json(result);
-  }
-  return res.status(200).json(result);
+export const getHistory = async (req, res) => {
+  const history = await mongoService.getHistory(req.query);
+  return res.status(200).json(ok(history, `Retrieved ${history.length} activity history records`));
 };
 
-export const getHistorySummary = (req, res) => {
-  const summary = historyService.getSummary();
+export const getHistorySummary = async (req, res) => {
+  const summary = await mongoService.getHistorySummary();
   return res.status(200).json(ok(summary, 'Activity history summary retrieved successfully'));
 };
 
