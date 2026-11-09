@@ -10,37 +10,10 @@ if (typeof process.loadEnvFile === 'function') {
 import app from './app.js';
 
 const PORT = process.env.PORT || 4000;
-const rawOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
-const allowedOrigins = rawOrigin.split(',').map((o) => o.trim());
 
-// Configure middleware
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    try {
-      const url = new URL(origin);
-      if (
-        rawOrigin === '*' ||
-        allowedOrigins.includes('*') ||
-        allowedOrigins.includes(origin) ||
-        /\.vercel\.app$/.test(url.hostname) ||
-        /^localhost(:\d+)?$/.test(url.host)
-      ) {
-        return callback(null, true);
-      }
-    } catch {
-      // Fallback
-    }
-    return callback(null, true);
-  },
-  credentials: true,
-}));
-app.use(express.json());
-
-// Mount the main router at /api
-app.use('/api', routes);
-
-// Start the server
+// app.js already configures CORS, JSON body parsing, the RASP middleware,
+// the full /api router, and the 404 / error handlers — server.js only
+// needs to start listening.
 const server = app.listen(PORT, () => {
   console.log(`E.D.I.T.H. backend server running on http://localhost:${PORT}`);
 });
