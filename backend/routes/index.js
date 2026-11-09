@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { ok } from '../../shared/contracts.js';
+import appsRouter from './apps.js';
 import eventsRouter from './events.js';
+import recommendationsRouter from './recommendations.js';
 
 const router = Router();
 
@@ -18,8 +20,13 @@ router.get(['/health', '/api/health'], (req, res) => {
   );
 });
 
-// Mount M3 events router
+// Mount M2 Apps router
+router.use('/apps', appsRouter);
+
+// Mount M3 Events router
 router.use('/events', eventsRouter);
 
-export default router;
+// Mount M4 Recommendations router
+router.use('/security/recommendations', recommendationsRouter);
 
+export default router;
