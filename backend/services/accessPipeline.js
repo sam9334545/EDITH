@@ -16,17 +16,6 @@ import { generateRecommendations } from './recommendations.js';
 
 /**
  * Access pipeline orchestrator.
- * Follows exact sequence:
- * 1 validate -> 2 find app -> 3 check status/perm -> 4 decide -> 5 createEvent ->
- * 6 analyzeEvent -> 7 create/dedupe alerts -> 8 calculateTrustScore ->
- * 9 generateRecommendations -> 10 update history -> 11 return result.
- *
- * @param {Object} payload
- * @param {string} payload.appId
- * @param {string} payload.resource
- * @param {string} [payload.reason]
- * @param {string} [payload.timestamp]
- * @returns {Promise<Object>}
  */
 export async function processAccessRequest(payload) {
   // 1. Validate payload
@@ -48,6 +37,8 @@ export async function processAccessRequest(payload) {
 
   // 3 & 4. Status check & permission check
   const decision = checkPermission(app, payload.resource);
+  const isAllowed = decision.allowed;
+  const denialReason = isAllowed ? null : decision.reason;
 
   // 5. Create event (M3)
   const event = createEvent({
@@ -58,8 +49,8 @@ export async function processAccessRequest(payload) {
     decision,
   });
 
-  // If allowed, update lastAccessedAt
-  if (decision.allowed && app.permissions?.[payload.resource]) {
+  // If allowed, update lastAccessedAt (Saima's Feature)
+  if (isAllowed && app.permissions?.[payload.resource]) {
     app.permissions[payload.resource].lastAccessedAt = event.timestamp;
   }
 
@@ -67,6 +58,26 @@ export async function processAccessRequest(payload) {
   const allAlerts = store?.alerts || (typeof store?.getState === 'function' ? store.getState().alerts : []) || [];
   const historyList = store?.history || (typeof store?.getState === 'function' ? store.getState().history : []) || [];
   const trustHistory = store?.trustHistory || (typeof store?.getState === 'function' ? store.getState().trustHistory : []) || [];
+
+  // --- SAIMA'S FEATURE: Record Access Activity History ---
+  const actId = typeof store?.nextId === 'function' 
+    ? store.nextId('act') 
+    : `act_${String((historyList.length + 1)).padStart(4, '0')}`;
+    
+  historyList.push({
+    id: actId,
+    appId: app.id,
+    eventType: isAllowed ? ACTIVITY_EVENT_TYPES.ACCESS_ALLOWED : ACTIVITY_EVENT_TYPES.ACCESS_DENIED,
+    description: `${payload.resource} access ${isAllowed ? 'allowed' : 'denied'}${denialReason ? ` (${denialReason})` : ''}`,
+    timestamp: event.timestamp,
+    metadata: {
+      appId: app.id,
+      resource: payload.resource,
+      eventId: event.id,
+      ...(denialReason ? { denialReason } : {}),
+    },
+  });
+  // --------------------------------------------------------
 
   // 6. Analyze event (M4 anomaly detection)
   const analysis = analyzeEvent(event, app, allEvents);
@@ -83,7 +94,6 @@ export async function processAccessRequest(payload) {
 
       const resourceKey = isWildcardResource ? '*' : (finding.resource || event.resource);
 
-      // Deduplication: appId|alertType|resource within 300s window
       const dedupeWindowMs = TRUST_CONFIG.DEDUPE_WINDOW_MS || 300000;
       const existingAlert = allAlerts.find(
         (a) =>
@@ -94,14 +104,12 @@ export async function processAccessRequest(payload) {
       );
 
       if (existingAlert) {
-        // Deduplicate: append event id, no new alert, no new penalty
         if (!existingAlert.relatedEventIds.includes(event.id)) {
           existingAlert.relatedEventIds.push(event.id);
         }
         event.alertId = existingAlert.id;
         event.suspicious = true;
       } else {
-        // Create new alert
         const alertId = typeof store?.nextId === 'function'
           ? store.nextId('alt')
           : `alt_${String((allAlerts.length + 1)).padStart(4, '0')}`;
@@ -125,13 +133,12 @@ export async function processAccessRequest(payload) {
         event.alertId = alertId;
         event.suspicious = true;
 
-        // Log alert_created in ActivityHistory
-        const actId = typeof store?.nextId === 'function'
+        const alertActId = typeof store?.nextId === 'function'
           ? store.nextId('act')
           : `act_${String((historyList.length + 1)).padStart(4, '0')}`;
 
         historyList.push({
-          id: actId,
+          id: alertActId,
           appId: app.id,
           eventType: ACTIVITY_EVENT_TYPES.ALERT_CREATED,
           description: `Security alert: ${newAlert.type} (${newAlert.severity})`,
@@ -146,14 +153,13 @@ export async function processAccessRequest(payload) {
     }
   }
 
-  // 8. Calculate Trust Score (M4)
+  // 8. Calculate Trust Score (Khyati's Feature)
   let trustResult = calculateTrustScore(app, allEvents, alertsCreated);
   if (alertsCreated.length > 0) {
     const previousScore = app.trustScore;
     app.trustScore = trustResult.newScore;
     app.updatedAt = event.timestamp;
 
-    // Log TrustScoreHistory
     const tsId = typeof store?.nextId === 'function'
       ? store.nextId('ts')
       : `ts_${String((trustHistory.length + 1)).padStart(4, '0')}`;
@@ -173,7 +179,6 @@ export async function processAccessRequest(payload) {
       penalty: trustResult.penalty,
     });
 
-    // Log ActivityHistory
     const actTsId = typeof store?.nextId === 'function'
       ? store.nextId('act')
       : `act_${String((historyList.length + 1)).padStart(4, '0')}`;
@@ -192,7 +197,7 @@ export async function processAccessRequest(payload) {
     });
   }
 
-  // 9. Generate Recommendations (M4)
+  // 9. Generate Recommendations (Your Feature)
   let newRecommendations = [];
   if (alertsCreated.length > 0) {
     newRecommendations = generateRecommendations(app, alertsCreated, allEvents);
@@ -210,6 +215,8 @@ export async function processAccessRequest(payload) {
       explanation: trustResult.explanation,
     },
     recommendations: newRecommendations,
+    allowed: isAllowed,
+    denialReason: denialReason
   };
 }
 

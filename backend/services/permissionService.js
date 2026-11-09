@@ -11,16 +11,14 @@ import { store } from '../store/index.js';
 /**
  * Checks whether an app is allowed to access a resource.
  * Pure function: Application, resource -> { allowed: boolean, reason: 'ok' | 'app_suspended' | 'permission_disabled' }
- *
- * @param {Object} app - Application entity
- * @param {string} resource - Resource name
- * @returns {{ allowed: boolean, reason: string }}
  */
 export function checkPermission(app, resource) {
+  if (!app) {
+    return { allowed: false, reason: 'app_not_found' };
+  }
+
   if (!resource || !RESOURCE_TYPES.includes(resource)) {
-    const error = new Error(`Invalid resource: ${resource}. Must be one of: ${RESOURCE_TYPES.join(', ')}`);
-    error.code = 'RESOURCE_INVALID';
-    throw error;
+    return { allowed: false, reason: 'resource_invalid' };
   }
 
   if (app.status === APPLICATION_STATUS.SUSPENDED) {
@@ -37,9 +35,6 @@ export function checkPermission(app, resource) {
 
 /**
  * Formats an application entity with its derived trust level.
- *
- * @param {Object} app
- * @returns {Object} Application with derived trustLevel
  */
 export function formatApp(app) {
   if (!app) return null;
@@ -49,133 +44,228 @@ export function formatApp(app) {
   };
 }
 
-/**
- * Updates an app's permission (grant or revoke).
- * Side effects: updates app.permissions[resource], app.updatedAt, adds ActivityHistory entry.
- *
- * @param {string} appId
- * @param {string} resource
- * @param {boolean} enabled
- * @returns {Object} Updated Application with derived trustLevel
- */
-export function updatePermission(appId, resource, enabled) {
+export function getAllApps(statusFilter = null) {
+  return store.getApps(statusFilter);
+}
+
+export function getAppById(id) {
+  return store.getApp(id);
+}
+
+export function grantPermission(appId, resource) {
   if (!RESOURCE_TYPES.includes(resource)) {
-    const error = new Error(`resource must be one of: ${RESOURCE_TYPES.join(', ')}`);
-    error.code = 'RESOURCE_INVALID';
-    throw error;
+    const err = new Error(`Resource must be one of: ${RESOURCE_TYPES.join(', ')}`);
+    err.code = 'RESOURCE_INVALID';
+    throw err;
   }
 
+  const existingApp = store.getApp(appId);
+  if (!existingApp) {
+    const err = new Error('Application not found');
+    err.code = 'APP_NOT_FOUND';
+    throw err;
+  }
+
+  const currentPerm = existingApp.permissions[resource] || {
+    enabled: false,
+    grantedAt: null,
+    lastAccessedAt: null,
+  };
+
+  if (currentPerm.enabled) {
+    return existingApp;
+  }
+
+  const now = store.clock.now();
+
+  const updatedApp = store.updateApp(appId, (app) => ({
+    ...app,
+    permissions: {
+      ...app.permissions,
+      [resource]: {
+        ...currentPerm,
+        enabled: true,
+        grantedAt: now,
+        lastAccessedAt: currentPerm.lastAccessedAt ?? null,
+      },
+    },
+    updatedAt: now,
+  }));
+
+  store.addHistory({
+    appId,
+    eventType: ACTIVITY_EVENT_TYPES.PERMISSION_GRANTED,
+    description: `${resource} permission granted`,
+    metadata: {
+      appId,
+      resource,
+      previousValue: false,
+      newValue: true,
+    },
+    timestamp: now,
+  });
+
+  return updatedApp;
+}
+
+export function revokePermission(appId, resource) {
+  if (!RESOURCE_TYPES.includes(resource)) {
+    const err = new Error(`Resource must be one of: ${RESOURCE_TYPES.join(', ')}`);
+    err.code = 'RESOURCE_INVALID';
+    throw err;
+  }
+
+  const existingApp = store.getApp(appId);
+  if (!existingApp) {
+    const err = new Error('Application not found');
+    err.code = 'APP_NOT_FOUND';
+    throw err;
+  }
+
+  const currentPerm = existingApp.permissions[resource] || {
+    enabled: false,
+    grantedAt: null,
+    lastAccessedAt: null,
+  };
+
+  if (!currentPerm.enabled) {
+    return existingApp;
+  }
+
+  const now = store.clock.now();
+
+  const updatedApp = store.updateApp(appId, (app) => ({
+    ...app,
+    permissions: {
+      ...app.permissions,
+      [resource]: {
+        ...currentPerm,
+        enabled: false,
+        grantedAt: currentPerm.grantedAt ?? null,
+        lastAccessedAt: currentPerm.lastAccessedAt ?? null,
+      },
+    },
+    updatedAt: now,
+  }));
+
+  store.addHistory({
+    appId,
+    eventType: ACTIVITY_EVENT_TYPES.PERMISSION_REVOKED,
+    description: `${resource} permission revoked`,
+    metadata: {
+      appId,
+      resource,
+      previousValue: true,
+      newValue: false,
+    },
+    timestamp: now,
+  });
+
+  return updatedApp;
+}
+
+export function updatePermission(appId, resource, enabled) {
   if (typeof enabled !== 'boolean') {
     const error = new Error('enabled must be a boolean');
     error.code = 'VALIDATION_ERROR';
     throw error;
   }
 
-  const apps = store?.apps || (typeof store?.getState === 'function' ? store.getState().apps : []);
-  const app = apps.find((a) => a.id === appId);
-  if (!app) {
-    const error = new Error(`Application ${appId} not found`);
-    error.code = 'APP_NOT_FOUND';
-    throw error;
-  }
-
-  const now = store?.clock?.now ? store.clock.now() : new Date().toISOString();
-
-  if (!app.permissions[resource]) {
-    app.permissions[resource] = { enabled: false, grantedAt: null, lastAccessedAt: null };
-  }
-
-  app.permissions[resource].enabled = enabled;
   if (enabled) {
-    app.permissions[resource].grantedAt = now;
+    return grantPermission(appId, resource);
+  } else {
+    return revokePermission(appId, resource);
   }
-  app.updatedAt = now;
-
-  // Add ActivityHistory
-  const historyList = store?.history || (typeof store?.getState === 'function' ? store.getState().history : []);
-  const historyId = typeof store?.nextId === 'function'
-    ? store.nextId('act')
-    : `act_${String((historyList?.length || 0) + 1).padStart(4, '0')}`;
-
-  const eventType = enabled
-    ? ACTIVITY_EVENT_TYPES.PERMISSION_GRANTED
-    : ACTIVITY_EVENT_TYPES.PERMISSION_REVOKED;
-
-  const historyEntry = {
-    id: historyId,
-    appId: app.id,
-    eventType,
-    description: `${resource} permission ${enabled ? 'granted' : 'revoked'}`,
-    timestamp: now,
-    metadata: { resource },
-  };
-
-  if (Array.isArray(historyList)) {
-    historyList.push(historyEntry);
-  }
-
-  return formatApp(app);
 }
 
-/**
- * Updates an app's lifecycle status (active or suspended).
- * Side effects: updates app.status, app.updatedAt, adds ActivityHistory entry.
- *
- * @param {string} appId
- * @param {string} status - 'active' | 'suspended'
- * @returns {Object} Updated Application with derived trustLevel
- */
+export function suspendApp(appId) {
+  const existingApp = store.getApp(appId);
+  if (!existingApp) {
+    const err = new Error('Application not found');
+    err.code = 'APP_NOT_FOUND';
+    throw err;
+  }
+
+  if (existingApp.status === APPLICATION_STATUS.SUSPENDED) {
+    return existingApp;
+  }
+
+  const now = store.clock.now();
+
+  const updatedApp = store.updateApp(appId, (app) => ({
+    ...app,
+    status: APPLICATION_STATUS.SUSPENDED,
+    updatedAt: now,
+  }));
+
+  store.addHistory({
+    appId,
+    eventType: ACTIVITY_EVENT_TYPES.APP_SUSPENDED,
+    description: `Application ${existingApp.name} suspended`,
+    metadata: {
+      appId,
+      previousStatus: APPLICATION_STATUS.ACTIVE,
+      newStatus: APPLICATION_STATUS.SUSPENDED,
+    },
+    timestamp: now,
+  });
+
+  return updatedApp;
+}
+
+export function reactivateApp(appId) {
+  const existingApp = store.getApp(appId);
+  if (!existingApp) {
+    const err = new Error('Application not found');
+    err.code = 'APP_NOT_FOUND';
+    throw err;
+  }
+
+  if (existingApp.status === APPLICATION_STATUS.ACTIVE) {
+    return existingApp;
+  }
+
+  const now = store.clock.now();
+
+  const updatedApp = store.updateApp(appId, (app) => ({
+    ...app,
+    status: APPLICATION_STATUS.ACTIVE,
+    updatedAt: now,
+  }));
+
+  store.addHistory({
+    appId,
+    eventType: ACTIVITY_EVENT_TYPES.APP_REACTIVATED,
+    description: `Application ${existingApp.name} reactivated`,
+    metadata: {
+      appId,
+      previousStatus: APPLICATION_STATUS.SUSPENDED,
+      newStatus: APPLICATION_STATUS.ACTIVE,
+    },
+    timestamp: now,
+  });
+
+  return updatedApp;
+}
+
+export function updateAppStatus(appId, status) {
+  if (status === APPLICATION_STATUS.SUSPENDED) {
+    return suspendApp(appId);
+  } else if (status === APPLICATION_STATUS.ACTIVE) {
+    return reactivateApp(appId);
+  } else {
+    const err = new Error(`Status must be one of: ${Object.values(APPLICATION_STATUS).join(', ')}`);
+    err.code = 'VALIDATION_ERROR';
+    throw err;
+  }
+}
+
 export function updateStatus(appId, status) {
-  if (!Object.values(APPLICATION_STATUS).includes(status)) {
-    const error = new Error(`status must be one of: ${Object.values(APPLICATION_STATUS).join(', ')}`);
-    error.code = 'VALIDATION_ERROR';
-    throw error;
-  }
-
-  const apps = store?.apps || (typeof store?.getState === 'function' ? store.getState().apps : []);
-  const app = apps.find((a) => a.id === appId);
-  if (!app) {
-    const error = new Error(`Application ${appId} not found`);
-    error.code = 'APP_NOT_FOUND';
-    throw error;
-  }
-
-  const now = store?.clock?.now ? store.clock.now() : new Date().toISOString();
-  app.status = status;
-  app.updatedAt = now;
-
-  // Add ActivityHistory
-  const historyList = store?.history || (typeof store?.getState === 'function' ? store.getState().history : []);
-  const historyId = typeof store?.nextId === 'function'
-    ? store.nextId('act')
-    : `act_${String((historyList?.length || 0) + 1).padStart(4, '0')}`;
-
-  const eventType = status === APPLICATION_STATUS.SUSPENDED
-    ? ACTIVITY_EVENT_TYPES.APP_SUSPENDED
-    : ACTIVITY_EVENT_TYPES.APP_REACTIVATED;
-
-  const historyEntry = {
-    id: historyId,
-    appId: app.id,
-    eventType,
-    description: `app ${status === APPLICATION_STATUS.SUSPENDED ? 'suspended' : 'reactivated'}`,
-    timestamp: now,
-    metadata: { status },
-  };
-
-  if (Array.isArray(historyList)) {
-    historyList.push(historyEntry);
-  }
-
-  return formatApp(app);
+  return updateAppStatus(appId, status);
 }
 
 /**
- * Applies a security recommendation.
- * Side effects: updates permission or status, records history, marks recommendation applied.
- *
- * @param {string} recommendationId
- * @returns {{ recommendation: Object, app: Object }}
+ * Applies a security recommendation (M2/M4 feature).
  */
 export function applyRecommendation(recommendationId) {
   const recommendations = store?.recommendations ||
@@ -188,16 +278,13 @@ export function applyRecommendation(recommendationId) {
     throw error;
   }
 
-  const apps = store?.apps || (typeof store?.getState === 'function' ? store.getState().apps : []) || [];
-  const app = apps.find((a) => a.id === recommendation.appId);
-
+  const app = store.getApp(recommendation.appId);
   if (!app) {
     const error = new Error(`Application ${recommendation.appId} not found`);
     error.code = 'APP_NOT_FOUND';
     throw error;
   }
 
-  // Idempotent: If already applied, return immediately unchanged
   if (recommendation.status === RECOMMENDATION_STATUS.APPLIED) {
     return {
       recommendation,
@@ -206,66 +293,16 @@ export function applyRecommendation(recommendationId) {
   }
 
   const now = store?.clock?.now ? store.clock.now() : new Date().toISOString();
-  const historyList = store?.history || (typeof store?.getState === 'function' ? store.getState().history : []);
 
-  // 1. Apply suggestedAction
   if (recommendation.suggestedAction === SUGGESTED_ACTIONS.REVOKE_PERMISSION && recommendation.resource) {
-    const resource = recommendation.resource;
-    if (app.permissions?.[resource]) {
-      app.permissions[resource].enabled = false;
-    }
-    app.updatedAt = now;
-
-    // Log permission_revoked
-    const historyId = typeof store?.nextId === 'function'
-      ? store.nextId('act')
-      : `act_${String((historyList?.length || 0) + 1).padStart(4, '0')}`;
-
-    const historyEntry = {
-      id: historyId,
-      appId: app.id,
-      eventType: ACTIVITY_EVENT_TYPES.PERMISSION_REVOKED,
-      description: `${resource} permission revoked`,
-      timestamp: now,
-      metadata: { resource, recommendationId: recommendation.id },
-    };
-
-    if (Array.isArray(historyList)) {
-      historyList.push(historyEntry);
-    }
+    revokePermission(app.id, recommendation.resource);
   } else if (recommendation.suggestedAction === SUGGESTED_ACTIONS.SUSPEND_APP) {
-    app.status = APPLICATION_STATUS.SUSPENDED;
-    app.updatedAt = now;
-
-    // Log app_suspended
-    const historyId = typeof store?.nextId === 'function'
-      ? store.nextId('act')
-      : `act_${String((historyList?.length || 0) + 1).padStart(4, '0')}`;
-
-    const historyEntry = {
-      id: historyId,
-      appId: app.id,
-      eventType: ACTIVITY_EVENT_TYPES.APP_SUSPENDED,
-      description: 'app suspended',
-      timestamp: now,
-      metadata: { status: 'suspended', recommendationId: recommendation.id },
-    };
-
-    if (Array.isArray(historyList)) {
-      historyList.push(historyEntry);
-    }
+    suspendApp(app.id);
   }
 
-  // 2. Mark recommendation applied
   recommendation.status = RECOMMENDATION_STATUS.APPLIED;
 
-  // 3. Log recommendation_applied
-  const recHistoryId = typeof store?.nextId === 'function'
-    ? store.nextId('act')
-    : `act_${String((historyList?.length || 0) + 1).padStart(4, '0')}`;
-
-  const recHistoryEntry = {
-    id: recHistoryId,
+  store.addHistory({
     appId: app.id,
     eventType: ACTIVITY_EVENT_TYPES.RECOMMENDATION_APPLIED,
     description: `Recommendation applied: ${recommendation.title}`,
@@ -275,22 +312,27 @@ export function applyRecommendation(recommendationId) {
       suggestedAction: recommendation.suggestedAction,
       resource: recommendation.resource,
     },
-  };
+  });
 
-  if (Array.isArray(historyList)) {
-    historyList.push(recHistoryEntry);
-  }
+  const updatedApp = store.getApp(app.id);
 
   return {
     recommendation,
-    app: formatApp(app),
+    app: formatApp(updatedApp),
   };
 }
 
 export default {
   checkPermission,
   formatApp,
+  getAllApps,
+  getAppById,
+  grantPermission,
+  revokePermission,
   updatePermission,
+  suspendApp,
+  reactivateApp,
+  updateAppStatus,
   updateStatus,
   applyRecommendation,
 };

@@ -11,9 +11,9 @@ import {
  * Analyzes an access event against security detection rules.
  * Pure function: (event, app, recentEvents) -> { suspicious: boolean, findings: Array }
  *
- * @param {Object} event - Current AccessEvent
- * @param {Object} app - Application entity
- * @param {Array<Object>} recentEvents - Previous and current events of this app
+ * @param {Object} event
+ * @param {Object} app
+ * @param {Array<Object>} recentEvents
  * @returns {{ suspicious: boolean, findings: Array<Object> }}
  */
 export function analyzeEvent(event, app, recentEvents = []) {
@@ -110,4 +110,3 @@ export function analyzeEvent(event, app, recentEvents = []) {
 }
 
 export default { analyzeEvent };
-
