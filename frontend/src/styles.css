@@ -375,6 +375,11 @@ tbody tr:hover { background: #fcfaf7; }
 .detail-line strong { color: var(--muted); font-size: 9px; }
 .detail-line span { color: var(--quiet); font-size: 8px; white-space: nowrap; }
 .detail-columns .muted-text { font-size: 10px; }
+.alert-detail-summary { margin: 18px 0 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.alert-detail-summary > span:not(.badge), .alert-detail-summary > time { color: var(--quiet); font-size: 9px; }
+.alert-detail-message { margin: 0; padding: 13px; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); background: var(--surface); font-size: 11px; line-height: 1.6; }
+.alert-detail-events { margin-top: 17px; }
+.alert-detail-events h3 { margin: 0 0 8px; color: var(--espresso); font: 700 12px 'Manrope', sans-serif; }
 .toast-stack { position: fixed; z-index: 30; right: 20px; bottom: 20px; width: min(390px, calc(100vw - 40px)); display: grid; gap: 8px; }
 .toast { min-height: 48px; padding: 10px 12px; display: grid; grid-template-columns: 8px minmax(0, 1fr) 24px; align-items: center; gap: 9px; border: 1px solid var(--border); border-radius: 9px; color: var(--espresso); background: var(--white); box-shadow: 0 10px 35px rgb(48 40 32 / 13%); font-size: 11px; }
 .toast > i { width: 7px; height: 7px; border-radius: 50%; background: var(--sage); }

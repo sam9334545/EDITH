@@ -7,6 +7,53 @@ import {
 } from '../../shared/contracts.js';
 import { store } from '../store/index.js';
 
+function validationError(message) {
+  const error = new Error(message);
+  error.code = 'VALIDATION_ERROR';
+  return error;
+}
+
+export function getEvents(query = {}) {
+  const { appId, resource, status, suspicious, limit: limitParam } = query;
+
+  if (appId !== undefined && (typeof appId !== 'string' || appId.trim() === '')) {
+    throw validationError('appId must be a non-empty string');
+  }
+  if (resource !== undefined && !RESOURCE_TYPES.includes(resource)) {
+    throw validationError(`resource must be one of: ${RESOURCE_TYPES.join(', ')}`);
+  }
+  if (status !== undefined && !Object.values(ACCESS_STATUS).includes(status)) {
+    throw validationError(`status must be one of: ${Object.values(ACCESS_STATUS).join(', ')}`);
+  }
+  if (suspicious !== undefined && suspicious !== 'true' && suspicious !== 'false') {
+    throw validationError('suspicious must be true or false');
+  }
+
+  let limit = 50;
+  if (limitParam !== undefined) {
+    if (!/^\d+$/.test(String(limitParam))) {
+      throw validationError('limit must be an integer between 1 and 200');
+    }
+    limit = Number(limitParam);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 200) {
+      throw validationError('limit must be an integer between 1 and 200');
+    }
+  }
+
+  return store.events
+    .filter((event) => appId === undefined || event.appId === appId)
+    .filter((event) => resource === undefined || event.resource === resource)
+    .filter((event) => status === undefined || event.status === status)
+    .filter((event) => suspicious === undefined || event.suspicious === (suspicious === 'true'))
+    .sort((left, right) => {
+      const difference = Date.parse(right.timestamp) - Date.parse(left.timestamp);
+      return Number.isNaN(difference) || difference === 0
+        ? right.id.localeCompare(left.id)
+        : difference;
+    })
+    .slice(0, limit);
+}
+
 /**
  * Creates and records an access event and its corresponding activity history.
  *
@@ -140,4 +187,4 @@ export function createEvent({ app, resource, reason, timestamp, decision }) {
   return event;
 }
 
-export default { createEvent };
+export default { createEvent, getEvents };

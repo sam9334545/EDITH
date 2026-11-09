@@ -5,7 +5,9 @@ import {
   ALERT_SEVERITY,
   ALERT_TYPES,
   APPLICATION_STATUS,
+  RECOMMENDATION_STATUS,
   RESOURCE_TYPES,
+  SUGGESTED_ACTIONS,
 } from '@shared/contracts.js';
 import { api } from './api.js';
 
@@ -389,7 +391,7 @@ function ErrorBlock({ error, endpoint }) {
   );
 }
 
-function AlertRows({ alerts, apps, events, onAcknowledge, busyId }) {
+function AlertRows({ alerts, apps, events, onAcknowledge, onView, busyId }) {
   const eventById = useMemo(() => new Map(events.map((event) => [event.id, event])), [events]);
   return alerts.map((alert) => {
     const resource = (alert.relatedEventIds || [])
@@ -411,6 +413,7 @@ function AlertRows({ alerts, apps, events, onAcknowledge, busyId }) {
         </div>
         <div className="alert-row-side">
           <StatusBadge tone={alert.severity || 'neutral'}>{humanize(alert.severity)}</StatusBadge>
+          <Button onClick={() => onView(alert)}>Details</Button>
           {alert.acknowledged
             ? <StatusBadge tone="muted">Acknowledged</StatusBadge>
             : <Button disabled={busyId === alert.id} onClick={() => onAcknowledge(alert)}>Acknowledge</Button>}
@@ -420,7 +423,7 @@ function AlertRows({ alerts, apps, events, onAcknowledge, busyId }) {
   });
 }
 
-function App({}) {
+function App() {
   const [page, setPage] = useState('overview');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [apps, setApps] = useState([]);
@@ -593,6 +596,15 @@ function App({}) {
     }
   }
 
+  function openAlertDetails(alert) {
+    setModal({
+      type: 'alert-detail',
+      alert,
+      title: ALERT_LABELS[alert.type] || humanize(alert.type),
+      onAcknowledge: askAcknowledge,
+    });
+  }
+
   function askAcknowledge(alert) {
     runAction(
       `ack-${alert.id}`,
@@ -602,13 +614,13 @@ function App({}) {
   }
 
   function askApplyRecommendation(recommendation) {
-    const highImpact = recommendation.suggestedAction === 'suspend_app'
-      || recommendation.suggestedAction === 'revoke_permission';
+    const highImpact = recommendation.suggestedAction === SUGGESTED_ACTIONS.SUSPEND_APP
+      || recommendation.suggestedAction === SUGGESTED_ACTIONS.REVOKE_PERMISSION;
     setModal({
       title: 'Apply this recommendation?',
       description: `${recommendation.title}. ${recommendation.description}`,
       confirmLabel: highImpact ? 'Apply recommendation' : 'Confirm',
-      danger: recommendation.suggestedAction === 'suspend_app',
+      danger: recommendation.suggestedAction === SUGGESTED_ACTIONS.SUSPEND_APP,
       onConfirm: () => runAction(
         `rec-${recommendation.id}`,
         () => api.applyRecommendation(recommendation.id),
@@ -669,7 +681,9 @@ function App({}) {
             startTime: new Date(start + 240000).toISOString(),
           });
           const recs = await api.getRecommendations('app_01');
-          const locationRecommendation = recs.find((item) => item.resource === 'location' && item.status === 'pending');
+          const locationRecommendation = recs.find((item) => (
+            item.resource === 'location' && item.status === RECOMMENDATION_STATUS.PENDING
+          ));
           if (locationRecommendation) await api.applyRecommendation(locationRecommendation.id);
           await api.simulateEvents({
             appId: 'app_01', resource: 'location', reason: 'Follow-up location request', count: 1,
@@ -709,6 +723,7 @@ function App({}) {
       onStatusChange: askStatusChange,
       onAcknowledge: askAcknowledge,
       onApplyRecommendation: askApplyRecommendation,
+      onViewAlert: openAlertDetails,
       onSimulate: simulate,
       onViewApp: openAppDetails,
     };
@@ -806,7 +821,9 @@ function App({}) {
           detailError={detailError}
           apps={apps}
           events={events}
+          alerts={alerts}
           history={history}
+          onAcknowledgeAlert={askAcknowledge}
           onCancel={() => { if (!busyAction) setModal(null); }}
         />
       )}
@@ -970,8 +987,8 @@ function ApplicationsPage({ apps, events, errors, onStatusChange, onViewApp, bus
         <div className="application-grid">
           {filtered.map((app) => {
             const permissions = Object.entries(app.permissions || {}).filter(([, permission]) => permission.enabled);
-            const lastAccess = permissions
-              .map(([, permission]) => permission.lastAccessedAt)
+            const lastAccess = Object.values(app.permissions || {})
+              .map((permission) => permission.lastAccessedAt)
               .filter(Boolean)
               .sort()
               .at(-1);
@@ -1182,7 +1199,7 @@ function SimulationPanel({ apps, onSubmit, busy }) {
   );
 }
 
-function SecurityPage({ apps, alerts, events, errors, onAcknowledge, busyAction }) {
+function SecurityPage({ apps, alerts, events, errors, onAcknowledge, onViewAlert, busyAction }) {
   const [severity, setSeverity] = useState('all');
   const [type, setType] = useState('all');
   const [acknowledged, setAcknowledged] = useState('all');
@@ -1223,6 +1240,7 @@ function SecurityPage({ apps, alerts, events, errors, onAcknowledge, busyAction 
                   apps={apps}
                   events={events}
                   onAcknowledge={onAcknowledge}
+                  onView={onViewAlert}
                   busyId={busyAction.replace('ack-', '')}
                 />
               </div>
@@ -1318,9 +1336,9 @@ function RecommendationsPage({ apps, recommendations, errors, onApplyRecommendat
       <Panel title="Recommendation queue" eyebrow={`${filtered.length} recommendations`} action={(
         <SelectField label="Status" value={status} onChange={setStatus} options={[
           { value: 'all', label: 'All statuses' },
-          { value: 'pending', label: 'Pending' },
-          { value: 'applied', label: 'Applied' },
-          { value: 'dismissed', label: 'Dismissed' },
+          { value: RECOMMENDATION_STATUS.PENDING, label: 'Pending' },
+          { value: RECOMMENDATION_STATUS.APPLIED, label: 'Applied' },
+          { value: RECOMMENDATION_STATUS.DISMISSED, label: 'Dismissed' },
         ]} />
       )}>
         {errors.recommendations ? <ErrorBlock error={errors.recommendations} endpoint="Recommendations" /> : filtered.length ? (
@@ -1329,7 +1347,7 @@ function RecommendationsPage({ apps, recommendations, errors, onApplyRecommendat
               <article className="recommendation-card" key={item.id}>
                 <div className="recommendation-card-head">
                   <span className="recommendation-mark"><Icon>↗</Icon></span>
-                  <StatusBadge tone={item.status === 'pending' ? 'warning' : 'muted'}>{humanize(item.status)}</StatusBadge>
+                  <StatusBadge tone={item.status === RECOMMENDATION_STATUS.PENDING ? 'warning' : 'muted'}>{humanize(item.status)}</StatusBadge>
                 </div>
                 <span className="eyebrow">{humanize(item.type)}</span>
                 <h3>{item.title}</h3>
@@ -1341,7 +1359,7 @@ function RecommendationsPage({ apps, recommendations, errors, onApplyRecommendat
                 </dl>
                 <div className="recommendation-footer">
                   <span>{humanize(item.suggestedAction || 'review')}</span>
-                  {item.status === 'pending' && (
+                  {item.status === RECOMMENDATION_STATUS.PENDING && (
                     <Button variant="primary" disabled={Boolean(busyAction)} onClick={() => onApplyRecommendation(item)}>Apply</Button>
                   )}
                 </div>
@@ -1417,7 +1435,7 @@ function metadataLabel(metadata) {
     .join(' · ');
 }
 
-function ConfirmationModal({ modal, busy, detailApp, detailError, apps, events, history, onCancel }) {
+function ConfirmationModal({ modal, busy, detailApp, detailError, apps, events, alerts, history, onCancel }) {
   useEffect(() => {
     function onKeyDown(event) {
       if (event.key === 'Escape' && !busy) onCancel();
@@ -1426,8 +1444,46 @@ function ConfirmationModal({ modal, busy, detailApp, detailError, apps, events, 
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [busy, onCancel]);
 
+  if (modal.type === 'alert-detail') {
+    const alert = modal.alert;
+    const relatedEvents = events.filter((event) => alert.relatedEventIds?.includes(event.id));
+    return (
+      <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
+        <section className="modal detail-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <div className="modal-heading">
+            <div><span className="eyebrow">Security finding · {alert.id}</span><h2 id="modal-title">{modal.title}</h2></div>
+            <button type="button" className="icon-button" aria-label="Close alert details" onClick={onCancel}>×</button>
+          </div>
+          <div className="alert-detail-summary">
+            <StatusBadge tone={alert.severity}>{humanize(alert.severity)}</StatusBadge>
+            <StatusBadge tone={alert.acknowledged ? 'muted' : 'warning'}>{alert.acknowledged ? 'Acknowledged' : 'Needs review'}</StatusBadge>
+            <span>{appName(apps, alert.appId)}</span>
+            <time>{formatDate(alert.timestamp)}</time>
+          </div>
+          <p className="alert-detail-message">{alert.message}</p>
+          <div className="alert-detail-events">
+            <h3>Related access events</h3>
+            {relatedEvents.length ? relatedEvents.map((event) => (
+              <div className="detail-line" key={event.id}>
+                <strong>{event.id} · {RESOURCE_LABELS[event.resource] || event.resource} · {humanize(event.status)}</strong>
+                <span>{formatDate(event.timestamp)}</span>
+              </div>
+            )) : (alert.relatedEventIds || []).map((eventId) => (
+              <div className="detail-line" key={eventId}><strong>{eventId}</strong><span>Event not in current result set</span></div>
+            ))}
+          </div>
+          <div className="modal-actions">
+            {!alert.acknowledged && <Button variant="primary" onClick={() => modal.onAcknowledge(alert)}>Acknowledge</Button>}
+            <Button onClick={onCancel}>Close</Button>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   if (modal.type === 'detail') {
     const relatedEvents = events.filter((event) => event.appId === detailApp?.id).slice(0, 6);
+    const relatedAlerts = alerts.filter((alert) => alert.appId === detailApp?.id).slice(0, 5);
     const relatedHistory = history.filter((item) => item.appId === detailApp?.id).slice(0, 5);
     return (
       <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
@@ -1450,6 +1506,9 @@ function ConfirmationModal({ modal, busy, detailApp, detailError, apps, events, 
                 <section><h3>Recent access</h3>{relatedEvents.length ? relatedEvents.map((event) => (
                   <div className="detail-line" key={event.id}><strong>{RESOURCE_LABELS[event.resource] || event.resource} · {humanize(event.status)}</strong><span>{formatDate(event.timestamp)}</span></div>
                 )) : <p className="muted-text">No access events returned for this application.</p>}</section>
+                <section><h3>Related security alerts</h3>{relatedAlerts.length ? relatedAlerts.map((alert) => (
+                  <div className="detail-line" key={alert.id}><strong>{ALERT_LABELS[alert.type] || humanize(alert.type)} · {humanize(alert.severity)}</strong><span>{formatDate(alert.timestamp)}</span></div>
+                )) : <p className="muted-text">No security alerts returned for this application.</p>}</section>
                 <section><h3>Trust and activity history</h3>{relatedHistory.length ? relatedHistory.map((item) => (
                   <div className="detail-line" key={item.id}><strong>{item.description}</strong><span>{formatDate(item.timestamp)}</span></div>
                 )) : <p className="muted-text">Activity history not available for this application.</p>}</section>

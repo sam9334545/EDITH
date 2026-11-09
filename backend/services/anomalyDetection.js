@@ -20,9 +20,16 @@ export function analyzeEvent(event, app, recentEvents = []) {
   const findings = [];
   const eventTime = new Date(event.timestamp).getTime();
 
-  // Filter events for the same application occurring on or before current event
-  const appEvents = recentEvents.filter(
-    (e) => e.appId === app.id && new Date(e.timestamp).getTime() <= eventTime
+  // Include the current event even when callers pass only previously recorded events.
+  const priorEvents = Array.isArray(recentEvents)
+    ? recentEvents.filter((candidate) => !(
+      candidate === event
+      || (typeof event.id === 'string' && candidate.id === event.id)
+    ))
+    : [];
+  const appEvents = [...priorEvents, event].filter(
+    (candidate) => candidate.appId === app.id
+      && new Date(candidate.timestamp).getTime() <= eventTime,
   );
 
   // R1: Excessive access (>10 requests for same resource in 60s)
@@ -42,8 +49,17 @@ export function analyzeEvent(event, app, recentEvents = []) {
     });
   }
 
-  // R2: Unauthorized resource (request while permission disabled)
-  if (event.status === ACCESS_STATUS.DENIED && event.denialReason === 'permission_disabled') {
+  // R3 takes precedence over an individual permission state.
+  if (app.status === APPLICATION_STATUS.SUSPENDED) {
+    findings.push({
+      ruleId: 'R3',
+      alertType: ALERT_TYPES.SUSPENDED_APP_ACCESS,
+      severity: ALERT_SEVERITY.MEDIUM,
+      resource: event.resource,
+      message: `${app.name} attempted resource access while app is suspended`,
+      relatedEventIds: [event.id],
+    });
+  } else if (app.permissions?.[event.resource]?.enabled === false) {
     findings.push({
       ruleId: 'R2',
       alertType: ALERT_TYPES.UNAUTHORIZED_RESOURCE,
@@ -54,23 +70,10 @@ export function analyzeEvent(event, app, recentEvents = []) {
     });
   }
 
-  // R3: Suspended app (request while app suspended)
-  if (event.status === ACCESS_STATUS.DENIED && (event.denialReason === 'app_suspended' || app.status === APPLICATION_STATUS.SUSPENDED)) {
-    findings.push({
-      ruleId: 'R3',
-      alertType: ALERT_TYPES.SUSPENDED_APP_ACCESS,
-      severity: ALERT_SEVERITY.MEDIUM,
-      resource: event.resource,
-      message: `${app.name} attempted resource access while app is suspended`,
-      relatedEventIds: [event.id],
-    });
-  }
-
-  // R4: Repeated restricted (>=3 denied permission_disabled attempts in 5 min)
+  // R4: Repeated restricted (>=3 denied attempts in 5 min)
   const window300s = eventTime - 300000;
   const deniedAttempts5m = appEvents.filter(
     (e) => e.status === ACCESS_STATUS.DENIED &&
-      e.denialReason === 'permission_disabled' &&
       new Date(e.timestamp).getTime() >= window300s
   );
 

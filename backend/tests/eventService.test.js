@@ -7,7 +7,7 @@ import {
   APPLICATION_STATUS,
 } from '../../shared/contracts.js';
 import { store } from '../store/index.js';
-import { createEvent } from '../services/eventService.js';
+import { createEvent, getEvents } from '../services/eventService.js';
 import { processAccessRequest } from '../services/accessPipeline.js';
 
 describe('M3 - eventService', () => {
@@ -110,6 +110,35 @@ describe('M3 - eventService', () => {
     assert.equal(event.denialReason, 'app_suspended');
   });
 
+  test('lists newest events first and supports combined filters', () => {
+    const filtered = getEvents({
+      appId: 'app_01',
+      resource: 'location',
+      status: 'allowed',
+      suspicious: 'false',
+      limit: '1',
+    });
+
+    assert.equal(filtered.length, 1);
+    assert.equal(filtered[0].id, 'evt_0003');
+    assert.deepEqual(getEvents(), store.events.slice().sort(
+      (left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp),
+    ).slice(0, 50));
+  });
+
+  test('validates event list query parameters', () => {
+    for (const query of [
+      { appId: '' },
+      { resource: 'unknown' },
+      { status: 'blocked' },
+      { suspicious: 'yes' },
+      { limit: '0' },
+      { limit: '201' },
+    ]) {
+      assert.throws(() => getEvents(query), (error) => error.code === 'VALIDATION_ERROR');
+    }
+  });
+
   test('processAccessRequest stub integrates properly with createEvent', async () => {
     const res = await processAccessRequest({
       appId: 'app_01',
@@ -124,4 +153,3 @@ describe('M3 - eventService', () => {
     assert.equal(res.app.permissions.location.lastAccessedAt, '2026-11-09T10:30:00.000Z');
   });
 });
-
