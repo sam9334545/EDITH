@@ -1,204 +1,212 @@
-import store from '../store/index.js';
-import permissionService from './permissionService.js';
-import eventService from './eventService.js';
-import historyService from './historyService.js';
-import analyzeEvent from './anomalyDetection.js';
-import calculateTrustScore from './trustScore.js';
-import generateRecommendations from './recommendations.js';
 import {
-  validateAccessPayload,
+  APPLICATION_STATUS,
+  ACCESS_STATUS,
+  ALERT_TYPES,
   ACTIVITY_EVENT_TYPES,
+  TRUST_CONFIG,
+  validateAccessPayload,
   trustLevelFor,
 } from '../../shared/contracts.js';
+import { store } from '../store/index.js';
+import { checkPermission, formatApp } from './permissionService.js';
+import { createEvent } from './eventService.js';
+import { analyzeEvent } from './anomalyDetection.js';
+import { calculateTrustScore } from './trustScoreService.js';
+import { generateRecommendations } from './recommendations.js';
 
-export class AccessPipeline {
-  /**
-   * Orchestrates the security pipeline for a single access request.
-   *
-   * @param {Object} payload
-   * @param {string} payload.appId
-   * @param {string} payload.resource
-   * @param {string} [payload.reason]
-   * @param {string} [payload.timestamp]
-   * @returns {Object} { event, alertsCreated, app, trustScore, recommendations }
-   */
-  processAccessRequest(payload) {
-    // 1 & 2: Validate
-    const validationError = validateAccessPayload(payload);
-    if (validationError) {
-      const err = new Error(validationError);
-      err.code = 'VALIDATION_ERROR';
-      throw err;
-    }
+/**
+ * Access pipeline orchestrator.
+ */
+export async function processAccessRequest(payload) {
+  // 1. Validate payload
+  const validationError = validateAccessPayload(payload);
+  if (validationError) {
+    const error = new Error(validationError);
+    error.code = 'VALIDATION_ERROR';
+    throw error;
+  }
 
-    // 3: Find app
-    const app = store.findAppById(payload.appId);
-    if (!app) {
-      const err = new Error(`Application with ID ${payload.appId} not found`);
-      err.code = 'APP_NOT_FOUND';
-      throw err;
-    }
+  // 2. Find application
+  const apps = store?.apps || (typeof store?.getState === 'function' ? store.getState().apps : []);
+  const app = apps.find((a) => a.id === payload.appId);
+  if (!app) {
+    const error = new Error(`Application ${payload.appId} not found`);
+    error.code = 'APP_NOT_FOUND';
+    throw error;
+  }
 
-    const timestamp = payload.timestamp || store.clock.now();
+  // 3 & 4. Status check & permission check
+  const decision = checkPermission(app, payload.resource);
+  const isAllowed = decision.allowed;
+  const denialReason = isAllowed ? null : decision.reason;
 
-    // 4 & 5 & 6: Check permission (checks suspended first, then enabled)
-    const decision = permissionService.checkPermission(app, payload.resource);
+  // 5. Create event (M3)
+  const event = createEvent({
+    app,
+    resource: payload.resource,
+    reason: payload.reason,
+    timestamp: payload.timestamp,
+    decision,
+  });
 
-    // 7: Create event (automatically emits access_allowed or access_denied history)
-    const event = eventService.createEvent({
-      app,
+  // If allowed, update lastAccessedAt
+  if (isAllowed && app.permissions?.[payload.resource]) {
+    app.permissions[payload.resource].lastAccessedAt = event.timestamp;
+  }
+
+  const allEvents = store?.events || (typeof store?.getState === 'function' ? store.getState().events : []) || [];
+  const allAlerts = store?.alerts || (typeof store?.getState === 'function' ? store.getState().alerts : []) || [];
+  const historyList = store?.history || (typeof store?.getState === 'function' ? store.getState().history : []) || [];
+  const trustHistory = store?.trustHistory || (typeof store?.getState === 'function' ? store.getState().trustHistory : []) || [];
+
+  // --- Feature 7: Record Access Activity History ---
+  const actId = typeof store?.nextId === 'function' 
+    ? store.nextId('act') 
+    : `act_${String((historyList.length + 1)).padStart(4, '0')}`;
+    
+  historyList.push({
+    id: actId,
+    appId: app.id,
+    eventType: isAllowed ? ACTIVITY_EVENT_TYPES.ACCESS_ALLOWED : ACTIVITY_EVENT_TYPES.ACCESS_DENIED,
+    description: `${payload.resource} access ${isAllowed ? 'allowed' : 'denied'}${denialReason ? ` (${denialReason})` : ''}`,
+    timestamp: event.timestamp,
+    metadata: {
+      appId: app.id,
       resource: payload.resource,
-      reason: payload.reason || 'Simulated request',
-      timestamp,
-      decision,
-    });
+      eventId: event.id,
+      ...(denialReason ? { denialReason } : {}),
+    },
+  });
 
-    // 8: Analyze event with security engine
-    const analysis = analyzeEvent(event, app, store.events);
+  // 6. Analyze event (M4 anomaly detection)
+  const analysis = analyzeEvent(event, app, allEvents);
 
-    const newAlerts = [];
-    const eventTime = new Date(timestamp).getTime();
+  const alertsCreated = [];
+  const eventTime = new Date(event.timestamp).getTime();
 
-    // 9: Deduplicate & create alerts
-    if (analysis.findings && analysis.findings.length > 0) {
-      for (const finding of analysis.findings) {
-        const dedupeResource = finding.resource || '*';
-        // Check if an alert with same appId, alertType, and resource exists within 300s
-        const existingAlert = store.alerts.find((alt) => {
-          if (alt.appId !== app.id || alt.type !== finding.alertType) {
-            return false;
-          }
-          const altResource = alt.resource || '*';
-          if (altResource !== dedupeResource) {
-            return false;
-          }
-          const altTime = new Date(alt.timestamp).getTime();
-          return Math.abs(eventTime - altTime) <= 300000;
-        });
+  // 7. Create or deduplicate alerts
+  if (analysis.suspicious && analysis.findings.length > 0) {
+    for (const finding of analysis.findings) {
+      const isWildcardResource =
+        finding.alertType === ALERT_TYPES.REPEATED_RESTRICTED_ACCESS ||
+        finding.alertType === ALERT_TYPES.UNUSUAL_RESOURCE_COMBINATION;
 
-        if (existingAlert) {
-          // Deduplicated: append event ID to existing alert, no new alert, no new penalty
-          if (!existingAlert.relatedEventIds.includes(event.id)) {
-            existingAlert.relatedEventIds.push(event.id);
-          }
-          event.alertId = existingAlert.id;
-          event.suspicious = true;
-        } else {
-          // New alert created
-          const alertId = store.nextId('alt');
-          const alert = {
-            id: alertId,
-            appId: app.id,
-            type: finding.alertType,
-            severity: finding.severity,
-            message: finding.message,
-            timestamp,
-            resource: dedupeResource,
-            relatedEventIds: finding.relatedEventIds || [event.id],
-            recommendationId: null,
-            acknowledged: false,
-            ruleId: finding.ruleId,
-          };
+      const resourceKey = isWildcardResource ? '*' : (finding.resource || event.resource);
 
-          store.alerts.push(alert);
-          newAlerts.push(alert);
+      const dedupeWindowMs = TRUST_CONFIG.DEDUPE_WINDOW_MS || 300000;
+      const existingAlert = allAlerts.find(
+        (a) =>
+          a.appId === app.id &&
+          a.type === finding.alertType &&
+          (a.resource || '*') === resourceKey &&
+          Math.abs(eventTime - new Date(a.timestamp).getTime()) <= dedupeWindowMs
+      );
 
-          event.alertId = alert.id;
-          event.suspicious = true;
-
-          // Automatically record alert_created history
-          historyService.recordActivity({
-            appId: app.id,
-            eventType: ACTIVITY_EVENT_TYPES.ALERT_CREATED,
-            description: `Security alert: ${alert.message}`,
-            timestamp,
-            metadata: {
-              alertId: alert.id,
-              alertType: alert.type,
-              severity: alert.severity,
-              ruleId: finding.ruleId,
-            },
-          });
+      if (existingAlert) {
+        if (!existingAlert.relatedEventIds.includes(event.id)) {
+          existingAlert.relatedEventIds.push(event.id);
         }
-      }
-    }
+        event.alertId = existingAlert.id;
+        event.suspicious = true;
+      } else {
+        const alertId = typeof store?.nextId === 'function'
+          ? store.nextId('alt')
+          : `alt_${String((allAlerts.length + 1)).padStart(4, '0')}`;
 
-    // 10: Calculate trust score if there are new alerts
-    let trustResult = {
-      previousScore: app.trustScore,
-      newScore: app.trustScore,
-      level: trustLevelFor(app.trustScore),
-      penalty: 0,
-      changeReason: 'No penalty',
-      explanation: [`Current score: ${app.trustScore} (${trustLevelFor(app.trustScore)})`],
-    };
-
-    if (newAlerts.length > 0) {
-      trustResult = calculateTrustScore(app, newAlerts);
-      if (trustResult.newScore !== trustResult.previousScore) {
-        const previousScore = app.trustScore;
-        app.trustScore = trustResult.newScore;
-        app.updatedAt = timestamp;
-
-        // Record TrustScoreHistory row
-        const tsId = store.nextId('ts');
-        const tsRow = {
-          id: tsId,
+        const newAlert = {
+          id: alertId,
           appId: app.id,
-          previousScore,
-          newScore: trustResult.newScore,
-          changeReason: trustResult.changeReason,
-          timestamp,
-          alertId: newAlerts[0]?.id || null,
-          penalty: trustResult.penalty,
+          type: finding.alertType,
+          severity: finding.severity,
+          message: finding.message,
+          timestamp: event.timestamp,
+          relatedEventIds: [...finding.relatedEventIds],
+          recommendationId: null,
+          acknowledged: false,
+          resource: resourceKey,
         };
-        store.trustHistory.push(tsRow);
 
-        // Automatically record trust_score_changed in Activity History
-        historyService.recordActivity({
+        allAlerts.push(newAlert);
+        alertsCreated.push(newAlert);
+
+        event.alertId = alertId;
+        event.suspicious = true;
+
+        const alertActId = typeof store?.nextId === 'function'
+          ? store.nextId('act')
+          : `act_${String((historyList.length + 1)).padStart(4, '0')}`;
+
+        historyList.push({
+          id: alertActId,
           appId: app.id,
-          eventType: ACTIVITY_EVENT_TYPES.TRUST_SCORE_CHANGED,
-          description: `Trust score changed from ${previousScore} to ${trustResult.newScore} (${trustResult.changeReason})`,
-          timestamp,
+          eventType: ACTIVITY_EVENT_TYPES.ALERT_CREATED,
+          description: `Security alert: ${newAlert.type} (${newAlert.severity})`,
+          timestamp: event.timestamp,
           metadata: {
-            previousScore,
-            newScore: trustResult.newScore,
-            penalty: trustResult.penalty,
-            alertId: newAlerts[0]?.id || null,
-            changeReason: trustResult.changeReason,
+            alertId: newAlert.id,
+            alertType: newAlert.type,
+            severity: newAlert.severity,
           },
         });
       }
     }
+  }
 
-    // 11: Generate recommendations for new alerts
-    const candidateRecs = generateRecommendations(
-      app,
-      newAlerts,
-      store.recommendations,
-      timestamp
-    );
-    const createdRecs = [];
+  // 8. Calculate Trust Score
+  let trustResult = calculateTrustScore(app, allEvents, alertsCreated);
+  if (alertsCreated.length > 0) {
+    const previousScore = app.trustScore;
+    app.trustScore = trustResult.newScore;
+    app.updatedAt = event.timestamp;
 
-    for (const recCandidate of candidateRecs) {
-      const recId = store.nextId('rec');
-      const rec = {
-        id: recId,
-        ...recCandidate,
-      };
-      store.recommendations.push(rec);
-      createdRecs.push(rec);
+    const tsId = typeof store?.nextId === 'function'
+      ? store.nextId('ts')
+      : `ts_${String((trustHistory.length + 1)).padStart(4, '0')}`;
 
-      // Link alert to recommendation
-      if (rec.alertId) {
-        const relatedAlert = store.alerts.find((a) => a.id === rec.alertId);
-        if (relatedAlert) {
-          relatedAlert.recommendationId = rec.id;
-        }
-      }
+    const changeReason = alertsCreated
+      .map((a) => `${a.severity.toUpperCase()} alert ${a.type}: -${TRUST_CONFIG.PENALTY[a.severity]}`)
+      .join(', ');
 
-      // Automatically record recommendation_created in Activity History
-      historyService.recordActivity({
+    trustHistory.push({
+      id: tsId,
+      appId: app.id,
+      previousScore,
+      newScore: trustResult.newScore,
+      changeReason,
+      timestamp: event.timestamp,
+      alertId: alertsCreated[0].id,
+      penalty: trustResult.penalty,
+    });
+
+    const actTsId = typeof store?.nextId === 'function'
+      ? store.nextId('act')
+      : `act_${String((historyList.length + 1)).padStart(4, '0')}`;
+
+    historyList.push({
+      id: actTsId,
+      appId: app.id,
+      eventType: ACTIVITY_EVENT_TYPES.TRUST_SCORE_CHANGED,
+      description: `Trust score changed: ${previousScore} -> ${trustResult.newScore} (-${trustResult.penalty})`,
+      timestamp: event.timestamp,
+      metadata: {
+        previousScore,
+        newScore: trustResult.newScore,
+        penalty: trustResult.penalty,
+      },
+    });
+  }
+
+  // 9. Generate Recommendations
+  let newRecommendations = [];
+  if (alertsCreated.length > 0) {
+    newRecommendations = generateRecommendations(app, alertsCreated, allEvents);
+    for (const rec of newRecommendations) {
+      const recActId = typeof store?.nextId === 'function'
+        ? store.nextId('act')
+        : `act_${String((historyList.length + 1)).padStart(4, '0')}`;
+
+      historyList.push({
+        id: recActId,
         appId: app.id,
         eventType: ACTIVITY_EVENT_TYPES.RECOMMENDATION_CREATED,
         description: `Recommendation: ${rec.title}`,
@@ -212,24 +220,23 @@ export class AccessPipeline {
         },
       });
     }
-
-    return {
-      event,
-      alertsCreated: newAlerts,
-      app: {
-        ...app,
-        trustLevel: trustLevelFor(app.trustScore),
-      },
-      trustScore: {
-        appId: app.id,
-        score: app.trustScore,
-        level: trustLevelFor(app.trustScore),
-        explanation: trustResult.explanation,
-      },
-      recommendations: createdRecs,
-    };
   }
+
+  // 10. Return standard aggregated result
+  return {
+    event,
+    alertsCreated,
+    app: formatApp(app),
+    trustScore: {
+      appId: app.id,
+      score: app.trustScore,
+      level: trustLevelFor(app.trustScore),
+      explanation: trustResult.explanation,
+    },
+    recommendations: newRecommendations,
+    allowed: isAllowed,
+    denialReason: denialReason,
+  };
 }
 
-export const accessPipeline = new AccessPipeline();
-export default accessPipeline;
+export default { processAccessRequest };

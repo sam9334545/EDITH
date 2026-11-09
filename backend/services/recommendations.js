@@ -1,99 +1,118 @@
 import {
   ALERT_TYPES,
   RECOMMENDATION_TYPES,
-  SUGGESTED_ACTIONS,
   RECOMMENDATION_STATUS,
+  SUGGESTED_ACTIONS,
 } from '../../shared/contracts.js';
+import { store } from '../store/index.js';
 
 /**
- * Pure recommendation generator based on new alerts.
- * Avoids generating duplicate pending recommendations for the same (appId, type, resource).
+ * Generates recommendations from newly detected security alerts.
+ * Pure/persisted: app, alerts, events -> Recommendation[]
  *
- * @param {Object} app - Application object
- * @param {Array<Object>} newAlerts - New alerts created in this cycle
- * @param {Array<Object>} existingRecommendations - Currently existing recommendations
- * @param {string} timestamp - Current ISO timestamp
- * @returns {Array<Object>} List of candidate new recommendations
+ * @param {Object} app Application entity
+ * @param {Array<Object>} alerts Array of SecurityAlert objects
+ * @param {Array<Object>} [events] Array of AccessEvent objects
+ * @returns {Array<Object>} Array of newly created Recommendation objects
  */
-export function generateRecommendations(app, newAlerts = [], existingRecommendations = [], timestamp) {
-  const newRecs = [];
+export function generateRecommendations(app, alerts = [], events = []) {
+  if (!app || !Array.isArray(alerts) || alerts.length === 0) {
+    return [];
+  }
 
-  for (const alert of newAlerts) {
-    let type = null;
-    let title = '';
-    let description = '';
-    let suggestedAction = SUGGESTED_ACTIONS.NONE;
+  const existingRecs = store?.recommendations ||
+    (typeof store?.getState === 'function' ? store.getState().recommendations : []) || [];
+
+  const newlyCreated = [];
+
+  for (const alert of alerts) {
+    let type;
+    let suggestedAction;
+    let title;
+    let description;
     let resource = alert.resource && alert.resource !== '*' ? alert.resource : null;
 
     switch (alert.type) {
-      case ALERT_TYPES.EXCESSIVE_ACCESS:
+      case ALERT_TYPES.EXCESSIVE_ACCESS: {
         type = RECOMMENDATION_TYPES.RESTRICT_PERMISSION;
-        title = `Restrict ${resource || 'excessive'} access`;
-        description = `Excessive ${resource} requests detected. Revoke permission to mitigate exposure.`;
         suggestedAction = SUGGESTED_ACTIONS.REVOKE_PERMISSION;
+        title = `Restrict ${resource || 'resource'}`;
+        description = `Excessive ${resource || 'resource'} requests detected from ${app.name}. Revoking permission is recommended.`;
         break;
-
-      case ALERT_TYPES.UNAUTHORIZED_RESOURCE:
+      }
+      case ALERT_TYPES.UNAUTHORIZED_RESOURCE: {
         type = RECOMMENDATION_TYPES.KEEP_DISABLED;
+        suggestedAction = SUGGESTED_ACTIONS.NONE;
         title = `Keep ${resource || 'resource'} disabled`;
-        description = `Unauthorized access attempt detected while permission was disabled. Keep permission disabled.`;
-        suggestedAction = SUGGESTED_ACTIONS.NONE;
+        description = `Unauthorized access attempts detected for disabled resource ${resource || 'resource'}. Keep disabled.`;
         break;
-
-      case ALERT_TYPES.SUSPENDED_APP_ACCESS:
+      }
+      case ALERT_TYPES.SUSPENDED_APP_ACCESS: {
         type = RECOMMENDATION_TYPES.REVIEW_PERMISSION;
-        title = `Review suspended app activity`;
-        description = `${app.name} attempted to access resources while suspended. Review app permissions and behavior.`;
         suggestedAction = SUGGESTED_ACTIONS.NONE;
+        title = 'Review the app';
+        description = `${app.name} attempted resource access while suspended. Review application status and credentials.`;
         break;
-
+      }
       case ALERT_TYPES.REPEATED_RESTRICTED_ACCESS:
+      case ALERT_TYPES.UNUSUAL_RESOURCE_COMBINATION: {
         type = RECOMMENDATION_TYPES.SUSPEND_APP;
-        title = `Suspend ${app.name}`;
-        description = `Repeated denied access attempts detected. Recommend suspending application.`;
         suggestedAction = SUGGESTED_ACTIONS.SUSPEND_APP;
-        resource = null;
+        title = 'Suspend or investigate the app';
+        description = `Multiple high-severity security violations detected for ${app.name}. Suspending application is recommended.`;
         break;
-
-      case ALERT_TYPES.UNUSUAL_RESOURCE_COMBINATION:
-        type = RECOMMENDATION_TYPES.SUSPEND_APP;
-        title = `Suspend ${app.name}`;
-        description = `Rapid access to multiple sensitive resources detected. Recommend suspending application.`;
-        suggestedAction = SUGGESTED_ACTIONS.SUSPEND_APP;
-        resource = null;
-        break;
-
+      }
       default:
-        break;
+        continue;
     }
 
-    if (!type) continue;
-
-    // Check if an identical pending recommendation already exists
-    const hasPendingDuplicate = [...existingRecommendations, ...newRecs].some(
+    // Deduplication check: Ensure only ONE pending recommendation exists per appId, type, and resource
+    const isDuplicate = [...existingRecs, ...newlyCreated].some(
       (r) =>
         r.appId === app.id &&
+        r.status === RECOMMENDATION_STATUS.PENDING &&
         r.type === type &&
-        r.resource === resource &&
-        r.status === RECOMMENDATION_STATUS.PENDING
+        (r.resource || null) === (resource || null)
     );
 
-    if (!hasPendingDuplicate) {
-      newRecs.push({
-        appId: app.id,
-        type,
-        title,
-        description,
-        suggestedAction,
-        resource,
-        alertId: alert.id,
-        status: RECOMMENDATION_STATUS.PENDING,
-        createdAt: timestamp,
-      });
+    if (isDuplicate) {
+      continue;
+    }
+
+    // Generate ID with rec_XXXX format
+    const nextRecId = typeof store?.nextId === 'function'
+      ? store.nextId('rec')
+      : `rec_${String((existingRecs.length + newlyCreated.length + 1)).padStart(4, '0')}`;
+
+    const createdAt = alert.timestamp || (store?.clock?.now ? store.clock.now() : new Date().toISOString());
+
+    const recommendation = {
+      id: nextRecId,
+      appId: app.id,
+      type,
+      title,
+      description,
+      suggestedAction,
+      status: RECOMMENDATION_STATUS.PENDING,
+      createdAt,
+    };
+
+    if (resource) {
+      recommendation.resource = resource;
+    }
+
+    if (alert.id) {
+      recommendation.alertId = alert.id;
+      alert.recommendationId = recommendation.id;
+    }
+
+    newlyCreated.push(recommendation);
+    if (Array.isArray(existingRecs)) {
+      existingRecs.push(recommendation);
     }
   }
 
-  return newRecs;
+  return newlyCreated;
 }
 
-export default generateRecommendations;
+export default { generateRecommendations };

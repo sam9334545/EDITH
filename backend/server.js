@@ -1,9 +1,21 @@
-import app from './app.js';
+import express from 'express';
+import cors from 'cors';
+import routes from './routes/index.js';
 
+const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.listen(PORT, () => {
-  console.log(`[E.D.I.T.H. Backend] Running on http://localhost:${PORT}`);
-  console.log(`[E.D.I.T.H. Backend] Health check: http://localhost:${PORT}/api/health`);
-  console.log(`[E.D.I.T.H. Backend] Activity History: http://localhost:${PORT}/api/history`);
+// Configure middleware
+app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(express.json());
+
+// Mount the main router at /api
+app.use('/api', routes);
+
+// Start the server
+const server = app.listen(PORT, () => {
+  console.log(`E.D.I.T.H. backend server running on http://localhost:${PORT}`);
 });
+
+export { app, server };
+export default app;
