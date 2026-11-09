@@ -40,7 +40,7 @@ export function getAppById(req, res) {
 
 /**
  * PATCH /api/apps/:id/permissions
- * Enable or disable an individual resource permission.
+ * Approve (enable: true) or Restrict/Revoke (enable: false) an individual resource permission.
  */
 export function updatePermission(req, res) {
   const { id } = req.params;
@@ -93,7 +93,7 @@ export function updatePermission(req, res) {
 
 /**
  * PATCH /api/apps/:id/status
- * Update application status (active or suspended).
+ * Update application status: Suspend ('suspended') or Reactivate ('active').
  */
 export function updateStatus(req, res) {
   const { id } = req.params;
@@ -110,6 +110,10 @@ export function updateStatus(req, res) {
     return res.status(400).json(fail('VALIDATION_ERROR', `Unsupported fields in request body: ${extraKeys.join(', ')}`));
   }
 
+  if (body.status === undefined) {
+    return res.status(400).json(fail('VALIDATION_ERROR', 'status is required'));
+  }
+
   const validationError = validateStatusPatch(body);
   if (validationError) {
     return res.status(400).json(fail('VALIDATION_ERROR', validationError));
@@ -117,7 +121,10 @@ export function updateStatus(req, res) {
 
   try {
     const updatedApp = permissionService.updateAppStatus(id, body.status);
-    return res.status(200).json(ok(updatedApp, 'Application status updated successfully'));
+    const msg = body.status === APPLICATION_STATUS.SUSPENDED
+      ? 'Application suspended successfully'
+      : 'Application reactivated successfully';
+    return res.status(200).json(ok(updatedApp, msg));
   } catch (err) {
     if (err.code === 'APP_NOT_FOUND') {
       return res.status(404).json(fail('APP_NOT_FOUND', 'Application not found'));

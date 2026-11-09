@@ -1,5 +1,5 @@
-// M2 Permission Service for E.D.I.T.H.
-// Owns app & permission state changes, access validation, and permission-related history.
+// M2 Permission & Access Control Service for E.D.I.T.H.
+// Owns app & permission state changes, access validation, status enforcement, and history.
 import {
   RESOURCE_TYPES,
   APPLICATION_STATUS,
@@ -11,9 +11,15 @@ import { store } from '../store/index.js';
  * Pure function to check if an app has permission to access a resource.
  * Does not mutate the application object.
  *
+ * Mandatory Decision Order:
+ * 1. Validate resource type.
+ * 2. If app.status === 'suspended', immediately deny with 'app_suspended'.
+ * 3. If !permissions[resource].enabled, deny with 'permission_disabled'.
+ * 4. Otherwise, allow with 'ok'.
+ *
  * @param {Object} app - Application object
  * @param {string} resource - Requested resource name
- * @returns {{ allowed: boolean, reason: 'ok' | 'app_suspended' | 'permission_disabled' | 'resource_invalid' }}
+ * @returns {{ allowed: boolean, reason: 'ok' | 'app_suspended' | 'permission_disabled' | 'resource_invalid' | 'app_not_found' }}
  */
 export function checkPermission(app, resource) {
   if (!app) {
@@ -60,9 +66,12 @@ export function getAppById(id) {
 }
 
 /**
- * Grant a permission to an application.
- * Enables the resource, updates grantedAt to current timestamp,
- * preserves lastAccessedAt, other permissions, trustScore, and status.
+ * Approve / Grant a permission for an application.
+ *
+ * Behaviour & Idempotency:
+ * - If already enabled: preserves grantedAt, does not emit redundant history.
+ * - If currently disabled: sets enabled: true, updates grantedAt to now,
+ *   preserves lastAccessedAt, other permissions, trustScore, and status.
  *
  * @param {string} appId
  * @param {string} resource
@@ -82,37 +91,44 @@ export function grantPermission(appId, resource) {
     throw err;
   }
 
+  const currentPerm = existingApp.permissions[resource] || {
+    enabled: false,
+    grantedAt: null,
+    lastAccessedAt: null,
+  };
+
+  // Idempotency check: if already enabled, avoid re-granting timestamp or duplicate history
+  if (currentPerm.enabled) {
+    return existingApp;
+  }
+
   const now = store.clock.now();
 
-  const updatedApp = store.updateApp(appId, (app) => {
-    const currentPerm = app.permissions[resource] || {
-      enabled: false,
-      grantedAt: null,
-      lastAccessedAt: null,
-    };
-
-    return {
-      ...app,
-      permissions: {
-        ...app.permissions,
-        [resource]: {
-          ...currentPerm,
-          enabled: true,
-          grantedAt: now,
-          // preserve lastAccessedAt
-          lastAccessedAt: currentPerm.lastAccessedAt ?? null,
-        },
+  const updatedApp = store.updateApp(appId, (app) => ({
+    ...app,
+    permissions: {
+      ...app.permissions,
+      [resource]: {
+        ...currentPerm,
+        enabled: true,
+        grantedAt: now,
+        lastAccessedAt: currentPerm.lastAccessedAt ?? null,
       },
-      updatedAt: now,
-    };
-  });
+    },
+    updatedAt: now,
+  }));
 
-  // Record history integration
+  // Record history integration with structured transition metadata
   store.addHistory({
     appId,
     eventType: ACTIVITY_EVENT_TYPES.PERMISSION_GRANTED,
     description: `${resource} permission granted`,
-    metadata: { resource },
+    metadata: {
+      appId,
+      resource,
+      previousValue: false,
+      newValue: true,
+    },
     timestamp: now,
   });
 
@@ -120,9 +136,13 @@ export function grantPermission(appId, resource) {
 }
 
 /**
- * Revoke a permission from an application.
- * Disables the resource, preserves historical grantedAt,
- * preserves lastAccessedAt, other permissions, trustScore, and status.
+ * Restrict / Revoke a permission from an application.
+ *
+ * Behaviour & Idempotency:
+ * - If already disabled: does nothing, preserves historical grantedAt and lastAccessedAt,
+ *   does not emit redundant history.
+ * - If currently enabled: sets enabled: false, preserves historical grantedAt and lastAccessedAt,
+ *   preserves other permissions, trustScore, and status.
  *
  * @param {string} appId
  * @param {string} resource
@@ -142,38 +162,44 @@ export function revokePermission(appId, resource) {
     throw err;
   }
 
+  const currentPerm = existingApp.permissions[resource] || {
+    enabled: false,
+    grantedAt: null,
+    lastAccessedAt: null,
+  };
+
+  // Idempotency check: if already disabled, avoid duplicate state update or history
+  if (!currentPerm.enabled) {
+    return existingApp;
+  }
+
   const now = store.clock.now();
 
-  const updatedApp = store.updateApp(appId, (app) => {
-    const currentPerm = app.permissions[resource] || {
-      enabled: false,
-      grantedAt: null,
-      lastAccessedAt: null,
-    };
-
-    return {
-      ...app,
-      permissions: {
-        ...app.permissions,
-        [resource]: {
-          ...currentPerm,
-          enabled: false,
-          // preserve historical grantedAt
-          grantedAt: currentPerm.grantedAt ?? null,
-          // preserve lastAccessedAt
-          lastAccessedAt: currentPerm.lastAccessedAt ?? null,
-        },
+  const updatedApp = store.updateApp(appId, (app) => ({
+    ...app,
+    permissions: {
+      ...app.permissions,
+      [resource]: {
+        ...currentPerm,
+        enabled: false,
+        grantedAt: currentPerm.grantedAt ?? null,
+        lastAccessedAt: currentPerm.lastAccessedAt ?? null,
       },
-      updatedAt: now,
-    };
-  });
+    },
+    updatedAt: now,
+  }));
 
-  // Record history integration
+  // Record history integration with structured transition metadata
   store.addHistory({
     appId,
     eventType: ACTIVITY_EVENT_TYPES.PERMISSION_REVOKED,
     description: `${resource} permission revoked`,
-    metadata: { resource },
+    metadata: {
+      appId,
+      resource,
+      previousValue: true,
+      newValue: false,
+    },
     timestamp: now,
   });
 
@@ -200,6 +226,8 @@ export function updatePermission(appId, resource, enabled) {
  * Suspend an application.
  * Sets status to suspended without modifying individual permissions.
  *
+ * Idempotency: If already suspended, returns without duplicate history.
+ *
  * @param {string} appId
  * @returns {Object} Updated application
  */
@@ -209,6 +237,11 @@ export function suspendApp(appId) {
     const err = new Error('Application not found');
     err.code = 'APP_NOT_FOUND';
     throw err;
+  }
+
+  // Idempotency check: if already suspended, return existing app
+  if (existingApp.status === APPLICATION_STATUS.SUSPENDED) {
+    return existingApp;
   }
 
   const now = store.clock.now();
@@ -224,7 +257,11 @@ export function suspendApp(appId) {
     appId,
     eventType: ACTIVITY_EVENT_TYPES.APP_SUSPENDED,
     description: `Application ${existingApp.name} suspended`,
-    metadata: { status: APPLICATION_STATUS.SUSPENDED },
+    metadata: {
+      appId,
+      previousStatus: APPLICATION_STATUS.ACTIVE,
+      newStatus: APPLICATION_STATUS.SUSPENDED,
+    },
     timestamp: now,
   });
 
@@ -235,6 +272,8 @@ export function suspendApp(appId) {
  * Reactivate an application.
  * Sets status to active without modifying individual permissions.
  *
+ * Idempotency: If already active, returns without duplicate history.
+ *
  * @param {string} appId
  * @returns {Object} Updated application
  */
@@ -244,6 +283,11 @@ export function reactivateApp(appId) {
     const err = new Error('Application not found');
     err.code = 'APP_NOT_FOUND';
     throw err;
+  }
+
+  // Idempotency check: if already active, return existing app
+  if (existingApp.status === APPLICATION_STATUS.ACTIVE) {
+    return existingApp;
   }
 
   const now = store.clock.now();
@@ -259,7 +303,11 @@ export function reactivateApp(appId) {
     appId,
     eventType: ACTIVITY_EVENT_TYPES.APP_REACTIVATED,
     description: `Application ${existingApp.name} reactivated`,
-    metadata: { status: APPLICATION_STATUS.ACTIVE },
+    metadata: {
+      appId,
+      previousStatus: APPLICATION_STATUS.SUSPENDED,
+      newStatus: APPLICATION_STATUS.ACTIVE,
+    },
     timestamp: now,
   });
 

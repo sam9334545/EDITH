@@ -119,6 +119,81 @@ export const store = {
     if (filter.limit) list = list.slice(0, filter.limit);
     return list;
   },
+
+  addAlert(alert) {
+    const entry = {
+      ...alert,
+      id: alert.id || this.nextId('alt'),
+      timestamp: alert.timestamp || this.clock.now(),
+      relatedEventIds: alert.relatedEventIds || [],
+      recommendationId: alert.recommendationId || null,
+      acknowledged: alert.acknowledged ?? false,
+    };
+    state.alerts.unshift(entry); // newest first
+    return entry;
+  },
+
+  getAlerts(filter = {}) {
+    let list = [...state.alerts];
+    if (filter.appId) list = list.filter((a) => a.appId === filter.appId);
+    if (filter.severity) list = list.filter((a) => a.severity === filter.severity);
+    if (typeof filter.acknowledged === 'boolean') list = list.filter((a) => a.acknowledged === filter.acknowledged);
+    if (filter.limit) list = list.slice(0, filter.limit);
+    return list;
+  },
+
+  updateAlert(id, updater) {
+    const idx = state.alerts.findIndex((a) => a.id === id);
+    if (idx === -1) return null;
+    const current = state.alerts[idx];
+    const updated = updater({ ...current, relatedEventIds: [...current.relatedEventIds] });
+    state.alerts[idx] = updated;
+    return updated;
+  },
+
+  addRecommendation(rec) {
+    const entry = {
+      ...rec,
+      id: rec.id || this.nextId('rec'),
+      createdAt: rec.createdAt || this.clock.now(),
+    };
+    state.recommendations.unshift(entry); // newest first
+    return entry;
+  },
+
+  getRecommendations(filter = {}) {
+    let list = [...state.recommendations];
+    if (filter.appId) list = list.filter((r) => r.appId === filter.appId);
+    if (filter.status) list = list.filter((r) => r.status === filter.status);
+    if (filter.limit) list = list.slice(0, filter.limit);
+    return list;
+  },
+
+  updateRecommendation(id, updater) {
+    const idx = state.recommendations.findIndex((r) => r.id === id);
+    if (idx === -1) return null;
+    const current = state.recommendations[idx];
+    const updated = updater({ ...current });
+    state.recommendations[idx] = updated;
+    return updated;
+  },
+
+  addTrustHistory(th) {
+    const entry = {
+      ...th,
+      id: th.id || this.nextId('ts'),
+      timestamp: th.timestamp || this.clock.now(),
+    };
+    state.trustHistory.unshift(entry); // newest first
+    return entry;
+  },
+
+  getTrustHistory(filter = {}) {
+    let list = [...state.trustHistory];
+    if (filter.appId) list = list.filter((t) => t.appId === filter.appId);
+    if (filter.limit) list = list.slice(0, filter.limit);
+    return list;
+  },
 };
 
 export default store;
