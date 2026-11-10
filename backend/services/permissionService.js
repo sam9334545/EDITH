@@ -7,6 +7,7 @@ import {
   trustLevelFor,
 } from '../../shared/contracts.js';
 import { store } from '../store/index.js';
+import { handleCorrectiveActionRecovery } from './adaptiveTrust.js';
 
 export function checkPermission(app, resource) {
   if (!app) {
@@ -303,6 +304,13 @@ export function applyRecommendation(recommendationId) {
       resource: recommendation.resource,
     },
   });
+
+  // Adaptive Trust Engine: evaluate corrective action recovery if enabled
+  try {
+    handleCorrectiveActionRecovery(app.id, recommendation, store);
+  } catch {
+    // Non-blocking
+  }
 
   const updatedApp = store.getApp(app.id);
 

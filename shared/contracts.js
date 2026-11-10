@@ -11,6 +11,7 @@ export const ALERT_TYPES = Object.freeze({
   SUSPENDED_APP_ACCESS: 'suspended_app_access',
   REPEATED_RESTRICTED_ACCESS: 'repeated_restricted_access',
   UNUSUAL_RESOURCE_COMBINATION: 'unusual_resource_combination',
+  BEHAVIOURAL_ANOMALY: 'behavioural_anomaly',
 });
 export const RECOMMENDATION_STATUS = Object.freeze({ PENDING: 'pending', APPLIED: 'applied', DISMISSED: 'dismissed' });
 export const RECOMMENDATION_TYPES = Object.freeze({
@@ -79,12 +80,38 @@ export const RUNTIME_POLICIES = Object.freeze({
   APP_SUSPENDED: 'APP_SUSPENDED',                         // enforced in strict only
   LOCATION_RATE_LIMIT: 'LOCATION_RATE_LIMIT',             // enforced in protect + strict
   SENSITIVE_COMBINATION_BURST: 'SENSITIVE_COMBINATION_BURST', // high severity, enforced in strict only
+  BEHAVIOURAL_DRIFT: 'BEHAVIOURAL_DRIFT',                 // high severity, enforced in protect + strict
 });
 // Additive denialReason values written by the guard (existing: permission_disabled, app_suspended).
-export const GUARD_DENIAL_REASONS = Object.freeze({ RATE_LIMIT_EXCEEDED: 'rate_limit_exceeded', POLICY_VIOLATION: 'policy_violation' });
+export const GUARD_DENIAL_REASONS = Object.freeze({
+  RATE_LIMIT_EXCEEDED: 'rate_limit_exceeded',
+  POLICY_VIOLATION: 'policy_violation',
+  BEHAVIOURAL_DRIFT: 'behavioural_drift',
+});
 export const GUARD_CONFIG = Object.freeze({
   LOCATION_RATE_LIMIT: { resource: 'location', maxRequests: 10, windowMs: 60000, severity: 'high' },
   SENSITIVE_COMBINATION_BURST: { distinctSensitive: 3, windowMs: 30000, severity: 'high' },
+  BEHAVIOURAL_DRIFT: { severity: 'high' },
+});
+
+// Behavioural DNA Engine contracts & configurations
+export const USAGE_PATTERNS = Object.freeze({
+  ROUTINE_PERIODIC: 'routine_periodic',
+  SPORADIC: 'sporadic',
+  BURST_EXPECTED: 'burst_expected',
+  DORMANT: 'dormant',
+});
+
+export const BEHAVIOURAL_DNA_CONFIG = Object.freeze({
+  BASELINE_WINDOW: '7d',
+  FREQUENCY_SPIKE_RATIO: 3.0,      // Requests occurring at >3x baseline frequency
+  BURST_BURST_MAX_INTERVAL_MS: 5000, // Access interval below 5000ms considered burst
+  SCORE_THRESHOLD: 50,              // Composite deviation score >= 50 flags anomaly
+  WEIGHTS: Object.freeze({
+    FREQUENCY_SPIKE: 35,
+    UNUSUAL_TIMING: 25,
+    RESOURCE_SHIFT: 40,
+  }),
 });
 
 export const ERROR_CODES = Object.freeze([
@@ -100,6 +127,27 @@ export const TRUST_CONFIG = Object.freeze({
   EXCESSIVE_ACCESS: { resource: 'location', maxRequests: 10, windowMs: 60000 },
   REPEATED_RESTRICTED: { attempts: 3, windowMs: 300000 },
   COMBINATION: { distinctSensitive: 3, windowMs: 30000 },
+});
+
+// Adaptive Trust Engine configuration
+export const ADAPTIVE_TRUST_CONFIG = Object.freeze({
+  RECOVERY: Object.freeze({
+    ON_CORRECTIVE_ACTION: 5,
+    CLEAN_STREAK_THRESHOLD: 10,
+    CLEAN_STREAK_BONUS: 2,
+    MAX_RECOVERY_CEILING: 100,
+  }),
+  REPEATED_VIOLATION: Object.freeze({
+    WINDOW_MS: 300000,
+    ADDITIONAL_PENALTY: 4,
+    ESCALATION_MULTIPLIER: 1.25,
+  }),
+  RISK_CATEGORIES: Object.freeze({
+    LOW_RISK: 'low_risk',
+    MODERATE_RISK: 'moderate_risk',
+    ELEVATED_RISK: 'elevated_risk',
+    HIGH_RISK: 'high_risk',
+  }),
 });
 export function trustLevelFor(score) {
   if (score >= 80) return TRUST_LEVELS.HIGH;
@@ -131,6 +179,13 @@ export function validateStatusPatch(p) {
 }
 export function validateGuardModePatch(p) {
   if (!p || !Object.values(GUARD_MODES).includes(p.mode)) return `mode must be one of ${Object.values(GUARD_MODES).join(', ')}`;
+  return null;
+}
+export function validateBaseline(b) {
+  if (!b || typeof b.appId !== 'string') return 'appId (string) is required';
+  if (!RESOURCE_TYPES.includes(b.resource)) return `resource must be one of ${RESOURCE_TYPES.join(', ')}`;
+  if (typeof b.averageAccessFrequency !== 'number') return 'averageAccessFrequency must be a number';
+  if (!b.expectedUsagePattern) return 'expectedUsagePattern is required';
   return null;
 }
 export { iso as isIsoTimestamp };

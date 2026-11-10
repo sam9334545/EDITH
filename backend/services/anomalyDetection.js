@@ -6,6 +6,7 @@ import {
   ACCESS_STATUS,
   TRUST_CONFIG,
 } from '../../shared/contracts.js';
+import { getBaseline, evaluateDeviation } from './behaviouralDna.js';
 
 /**
  * Analyzes an access event against security detection rules.
@@ -108,6 +109,30 @@ export function analyzeEvent(event, app, recentEvents = []) {
       message: `${app.name} accessed ${distinctSensitive.size} distinct sensitive resources in 30s (${Array.from(distinctSensitive).join(', ')})`,
       relatedEventIds: recentEvents30s.map((e) => e.id),
     });
+  }
+
+  // R6: Behavioural DNA deviation (composite deviation: frequency spike, timing, resource shift)
+  // Evaluates when basic static rules (R1 excessive access, R2 unauthorized, R3 suspended) did not already trigger
+  const hasBaseResourceAlert = findings.some(
+    (f) => f.ruleId === 'R1' || f.ruleId === 'R2' || f.ruleId === 'R3'
+  );
+  const isDedicatedR1Resource = event.resource === TRUST_CONFIG.EXCESSIVE_ACCESS.resource;
+
+  if (!hasBaseResourceAlert && !isDedicatedR1Resource) {
+    const baseline = getBaseline(app.id, event.resource);
+    if (baseline) {
+      const deviation = evaluateDeviation(event, app, baseline, appEvents);
+      if (deviation.isAnomaly) {
+        findings.push({
+          ruleId: 'R6',
+          alertType: ALERT_TYPES.BEHAVIOURAL_ANOMALY,
+          severity: ALERT_SEVERITY.HIGH,
+          resource: event.resource,
+          message: `${app.name} Behavioural DNA anomaly: ${deviation.reasons.join('; ')} (deviation score: ${deviation.deviationScore})`,
+          relatedEventIds: [event.id],
+        });
+      }
+    }
   }
 
   return {

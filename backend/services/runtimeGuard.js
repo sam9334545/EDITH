@@ -27,6 +27,7 @@ import {
   DEFAULT_GUARD_MODE,
 } from '../../shared/contracts.js';
 import { store } from '../store/index.js';
+import { getBaseline, evaluateDeviation } from './behaviouralDna.js';
 
 const SEVERITY_RANK = Object.freeze({ low: 1, medium: 2, high: 3, critical: 4 });
 
@@ -99,6 +100,25 @@ function inspectBehaviour({ app, resource, timestamp, recentEvents }) {
       });
     }
   }
+
+  // Behavioural DNA drift inspection
+  if (resource !== rate.resource) {
+    const baseline = getBaseline(app.id, resource);
+    if (baseline) {
+      const syntheticEvent = { id: 'guard_eval', appId: app.id, resource, timestamp };
+      const deviation = evaluateDeviation(syntheticEvent, app, baseline, appEvents);
+      if (deviation.isAnomaly) {
+        triggered.push({
+          policy: RUNTIME_POLICIES.BEHAVIOURAL_DRIFT,
+          severity: GUARD_CONFIG.BEHAVIOURAL_DRIFT?.severity || 'high',
+          reason: GUARD_DENIAL_REASONS.BEHAVIOURAL_DRIFT,
+          detail: `Behavioural drift detected: ${deviation.reasons.join(', ')}`,
+          enforcedIn: [GUARD_MODES.STRICT],
+        });
+      }
+    }
+  }
+
   return triggered;
 }
 

@@ -14,6 +14,7 @@ import { createEvent } from './eventService.js';
 import { analyzeEvent } from './anomalyDetection.js';
 import { calculateTrustScore } from './trustScore.js';
 import { generateRecommendations } from './recommendations.js';
+import { updateBaselineOnAccess } from './behaviouralDna.js';
 
 /**
  * Access pipeline orchestrator.
@@ -65,6 +66,9 @@ export function processAccessRequest(payload) {
   if (isAllowed && app.permissions?.[payload.resource]) {
     app.permissions[payload.resource].lastAccessedAt = event.timestamp;
   }
+
+  // Dynamic rolling update of Behavioural DNA baseline on access
+  updateBaselineOnAccess(app.id, payload.resource, event, store);
 
   const allEvents = store?.events || (typeof store?.getState === 'function' ? store.getState().events : []) || [];
   const allAlerts = store?.alerts || (typeof store?.getState === 'function' ? store.getState().alerts : []) || [];
@@ -171,6 +175,8 @@ export function processAccessRequest(payload) {
       timestamp: event.timestamp,
       alertId: alertsCreated[0].id,
       penalty: trustResult.penalty,
+      appliedAdjustment: -trustResult.penalty,
+      triggeringEvent: alertsCreated[0].type,
     });
 
     const actTsId = typeof store?.nextId === 'function'
