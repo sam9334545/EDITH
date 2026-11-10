@@ -117,7 +117,7 @@ export function RecommendationsPage({ apps = [], recommendations = [], errors = 
                         disabled={Boolean(busyAction)}
                         onClick={() => onApplyRecommendation(item)}
                       >
-                        Apply remediation
+                        Apply recommendation
                       </Button>
                     )}
                   </div>
