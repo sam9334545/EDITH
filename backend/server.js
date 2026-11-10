@@ -4,6 +4,8 @@ import app from './app.js';
 import { loadEnvironment } from './config/environment.js';
 import { connectDatabase, disconnectDatabase } from './database/connection.js';
 import { seedApplications } from './services/mongoService.js';
+import { seedPostureDemoData } from './services/demoDataService.js';
+import { getPostureOverview } from './services/postureService.js';
 
 loadEnvironment();
 
@@ -14,6 +16,8 @@ let shuttingDown = false;
 export async function startServer() {
   await connectDatabase();
   await seedApplications();
+  await seedPostureDemoData();
+  await getPostureOverview({ days: 30 });
 
   server = app.listen(port);
   try {

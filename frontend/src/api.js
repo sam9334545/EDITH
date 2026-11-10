@@ -75,6 +75,22 @@ export const api = {
   getHistory: (params = {}) => request(`/history${queryString(params)}`),
   getStats: () => request('/stats'),
   resetDemo: () => request('/demo/reset', { method: 'POST' }),
+  getPostureOverview: (params = {}) => request(`/posture/overview${queryString(params)}`),
+  getPostureApplications: (params = {}) => request(`/posture/applications${queryString(params)}`),
+  getApplicationPosture: (appId) => request(`/posture/applications/${encodeURIComponent(appId)}`),
+  getPostureFindings: (params = {}) => request(`/posture/findings${queryString(params)}`),
+  getPostureFinding: (id) => request(`/posture/findings/${encodeURIComponent(id)}`),
+  acknowledgeFinding: (id) => request(`/posture/findings/${encodeURIComponent(id)}/acknowledge`, { method: 'POST' }),
+  resolveFinding: (id) => request(`/posture/findings/${encodeURIComponent(id)}/resolve`, { method: 'POST' }),
+  getPostureTrends: (params = {}) => request(`/posture/trends${queryString(params)}`),
+  getPostureRuntimeEvents: (params = {}) => request(`/posture/runtime-events${queryString(params)}`),
+  getPostureIncidents: (params = {}) => request(`/posture/incidents${queryString(params)}`),
+  getPostureIncident: (id) => request(`/posture/incidents/${encodeURIComponent(id)}`),
+  getPosturePolicies: () => request('/posture/policies'),
+  updatePosturePolicy: (ruleId, body) => request(
+    `/posture/policies/${encodeURIComponent(ruleId)}`,
+    { method: 'PATCH', body },
+  ),
 };
 
 export { API_BASE_URL };

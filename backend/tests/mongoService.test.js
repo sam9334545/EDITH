@@ -45,15 +45,15 @@ after(async () => {
   await replicaSet.stop();
 });
 
-test('seeding inserts three apps and never overwrites existing state', async () => {
-  assert.equal(await App.countDocuments(), 3);
+test('seeding inserts fifteen apps and never overwrites existing state', async () => {
+  assert.equal(await App.countDocuments(), 15);
   await updatePermission('app_01', 'contacts', true);
   await App.updateOne({ id: 'app_01' }, { $set: { trustScore: 37 } });
 
   await seedApplications();
 
   const app = await getApp('app_01');
-  assert.equal(await App.countDocuments(), 3);
+  assert.equal(await App.countDocuments(), 15);
   assert.equal(app.trustScore, 37);
   assert.equal(app.permissions.contacts.enabled, true);
 });
@@ -121,7 +121,7 @@ test('concurrent access requests serialize per application without duplicate ale
 
   assert.equal(await Event.countDocuments(), 12);
   assert.equal(await Alert.countDocuments({ alertType: 'excessive_access' }), 1);
-  assert.equal(await TrustHistory.countDocuments(), 1);
+  assert.equal(await TrustHistory.countDocuments({ alertId: { $ne: null } }), 1);
   assert.equal((await getApp('app_01')).trustScore, 79);
 });
 
@@ -169,12 +169,12 @@ test('HTTP API keeps response contracts through the persistent demo workflow', a
     const statsResponse = await fetch(`${base}/stats`);
     const stats = await statsResponse.json();
     assert.equal(statsResponse.status, 200);
-    assert.equal(stats.data.totalApps, 3);
+    assert.equal(stats.data.totalApps, 15);
 
     const appResponse = await fetch(`${base}/apps`);
     const apps = await appResponse.json();
     assert.equal(apps.success, true);
-    assert.equal(apps.data.length, 3);
+    assert.equal(apps.data.length, 15);
 
     const simulationResponse = await fetch(`${base}/events/simulate`, {
       method: 'POST',
@@ -199,7 +199,7 @@ test('HTTP API keeps response contracts through the persistent demo workflow', a
     const scoreResponse = await fetch(`${base}/security/score/app_01`);
     const score = await scoreResponse.json();
     assert.equal(score.data.score, 79);
-    assert.equal(score.data.history.length, 1);
+    assert.equal(score.data.history.length, 2);
 
     const ackResponse = await fetch(`${base}/security/alerts/${alertList.data[0].id}/acknowledge`, { method: 'PATCH' });
     assert.equal((await ackResponse.json()).data.acknowledged, true);

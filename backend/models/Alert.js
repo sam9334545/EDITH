@@ -11,10 +11,13 @@ const alertSchema = new mongoose.Schema({
   acknowledged: { type: Boolean, default: false },
   timestamp: { type: Date, required: true },
   recommendationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Recommendation', default: null },
+  isDemo: { type: Boolean, default: false, index: true },
+  demoId: { type: String, default: null },
 }, { timestamps: true, versionKey: false });
 
 alertSchema.index({ appId: 1, timestamp: -1 });
 alertSchema.index({ appId: 1, alertType: 1, resource: 1, timestamp: -1 });
 alertSchema.index({ severity: 1, acknowledged: 1 });
+alertSchema.index({ demoId: 1 }, { unique: true, partialFilterExpression: { demoId: { $type: 'string' } } });
 
 export default mongoose.models.Alert || mongoose.model('Alert', alertSchema);

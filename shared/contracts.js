@@ -33,6 +33,43 @@ export const ACTIVITY_EVENT_TYPES = Object.freeze({
   RECOMMENDATION_APPLIED: 'recommendation_applied',
 });
 export const TRUST_LEVELS = Object.freeze({ HIGH: 'high', MODERATE: 'moderate', LOW: 'low', CRITICAL: 'critical' });
+export const POSTURE_RISK_LEVELS = Object.freeze({
+  CRITICAL: 'critical', HIGH: 'high', MEDIUM: 'medium', LOW: 'low',
+});
+export const FINDING_STATUS = Object.freeze({
+  OPEN: 'open', ACKNOWLEDGED: 'acknowledged', RESOLVED: 'resolved',
+});
+export const POSTURE_FINDING_TYPES = Object.freeze({
+  EXCESSIVE_PERMISSION: 'excessive_permission',
+  UNUSED_PERMISSION: 'unused_permission',
+  RISKY_COMBINATION: 'risky_combination',
+  POLICY_VIOLATION: 'policy_violation',
+  UNACKNOWLEDGED_CRITICAL_ALERT: 'unacknowledged_critical_alert',
+});
+export const POSTURE_CONFIG = Object.freeze({
+  SCORE: Object.freeze({
+    MIN: 0,
+    MAX: 100,
+    RESOURCE_PENALTY: Object.freeze({ location: 0, contacts: 6, camera: 3, microphone: 3, files: 6 }),
+    EXCESSIVE_PERMISSION_PENALTY: 18,
+    RISKY_COMBINATION_PENALTY: 12,
+    UNUSED_SENSITIVE_PERMISSION_PENALTY: 4,
+    UNLINKED_DENIED_EVENT_PENALTY: 5,
+    UNLINKED_SUSPICIOUS_EVENT_PENALTY: 3,
+  }),
+  UNUSED_PERMISSION_DAYS: 30,
+  REPEATED_DENIAL_THRESHOLD: 3,
+  RISKY_COMBINATIONS: Object.freeze([
+    Object.freeze({
+      resources: Object.freeze(['camera', 'microphone']),
+      allowedCategories: Object.freeze(['communication', 'media', 'notes']),
+    }),
+    Object.freeze({
+      resources: Object.freeze(['contacts', 'location']),
+      allowedCategories: Object.freeze(['fitness', 'maps', 'travel', 'weather']),
+    }),
+  ]),
+});
 // ---- Runtime Guard (RASP-inspired, simulated; does not monitor system calls) ----
 export const GUARD_MODES = Object.freeze({ MONITOR: 'monitor', PROTECT: 'protect', STRICT: 'strict' });
 export const DEFAULT_GUARD_MODE = GUARD_MODES.STRICT; // strict keeps the MVP rule "suspended apps are always denied"

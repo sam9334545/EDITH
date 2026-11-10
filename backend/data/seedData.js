@@ -1,22 +1,56 @@
 // Deterministic seed. Never use Math.random / Date.now here. Schemas: shared/contracts.js
 import { RESOURCE_TYPES, APPLICATION_STATUS, ACCESS_STATUS, ACTIVITY_EVENT_TYPES, RECOMMENDATION_STATUS, RECOMMENDATION_TYPES, SUGGESTED_ACTIONS } from '../../shared/contracts.js';
+import { calculateInitialProfileScore } from '../services/trustScore.js';
 
-const T0 = '2026-11-01T09:00:00.000Z';
+const T0 = '2026-10-10T09:00:00.000Z';
 const perms = (on, last = {}) => Object.fromEntries(RESOURCE_TYPES.map((r) => [r, {
   enabled: on.includes(r), grantedAt: on.includes(r) ? T0 : null, lastAccessedAt: last[r] || null }]));
 
+const demoApp = (id, name, category, description, granted, expected, last = {}) => {
+  const app = {
+    id,
+    name,
+    category,
+    description,
+    expectedPermissions: expected,
+    permissions: perms(granted, last),
+    trustScore: 0,
+    status: APPLICATION_STATUS.ACTIVE,
+    createdAt: T0,
+    updatedAt: T0,
+    isDemo: true,
+    demoId: `demo-${id}`,
+  };
+  app.trustScore = calculateInitialProfileScore(app);
+  return app;
+};
+
+const DEMO_APPS = [
+  demoApp('app_01', 'FitTrack (Fitness App)', 'fitness', 'Fictional fitness tracker demo for workout and route tracking', ['location', 'files'], ['location', 'files'], { location: '2026-11-08T08:10:00.000Z' }),
+  demoApp('app_02', 'ShopEasy (Shopping App)', 'shopping', 'Fictional shopping app demo with product image search', ['camera', 'files'], ['camera', 'files'], { camera: '2026-11-08T12:00:00.000Z' }),
+  demoApp('app_03', 'JotDown (Notes App)', 'notes', 'Fictional notes application demo with photo and voice attachments', ['camera', 'microphone', 'files'], ['camera', 'microphone', 'files'], { microphone: '2026-11-08T15:30:00.000Z' }),
+  demoApp('app_04', 'Google Maps Demo', 'maps', 'Fictional navigation app; not affiliated with Google', ['location', 'files'], ['location', 'files'], { location: '2026-11-08T09:00:00.000Z' }),
+  demoApp('app_05', 'WhatsApp Demo', 'communication', 'Fictional messaging app; not affiliated with WhatsApp', ['camera', 'microphone', 'contacts'], ['camera', 'microphone', 'contacts'], { contacts: '2026-11-07T14:00:00.000Z' }),
+  demoApp('app_06', 'Instagram Demo', 'social', 'Fictional social photo-sharing app; not affiliated with Instagram', ['camera', 'files', 'contacts'], ['camera', 'files'], { camera: '2026-11-07T10:00:00.000Z' }),
+  demoApp('app_07', 'Spotify Demo', 'media', 'Fictional audio streaming app; not affiliated with Spotify', ['camera', 'files'], ['files'], { files: '2026-11-06T16:00:00.000Z' }),
+  demoApp('app_08', 'YouTube Demo', 'media', 'Fictional video streaming app; not affiliated with YouTube', ['camera', 'microphone', 'files'], ['camera', 'files'], { camera: '2026-11-06T11:00:00.000Z' }),
+  demoApp('app_09', 'Calculator Demo', 'utilities', 'Fictional basic calculator app', ['contacts'], [], {}),
+  demoApp('app_10', 'Weather App Demo', 'weather', 'Fictional local weather forecast app', ['location', 'files', 'contacts'], ['location', 'files'], { location: '2026-11-07T08:00:00.000Z' }),
+  demoApp('app_11', 'Banking App Demo', 'finance', 'Fictional banking app with account-contact lookup', ['camera', 'files', 'contacts', 'location'], ['camera', 'files', 'contacts'], { camera: '2026-11-05T12:00:00.000Z' }),
+  demoApp('app_12', 'Camera App Demo', 'camera', 'Fictional camera utility with optional voice capture', ['camera', 'microphone', 'files'], ['camera'], { camera: '2026-11-08T13:00:00.000Z' }),
+  demoApp('app_13', 'File Manager Demo', 'file_manager', 'Fictional file organization utility', ['files', 'contacts'], ['files'], { files: '2026-11-04T09:00:00.000Z' }),
+  demoApp('app_14', 'Unknown Third-party App', 'unknown', 'Fictional unverified demo application with an unclear purpose', ['camera', 'microphone', 'contacts', 'location', 'files'], ['files'], {}),
+  demoApp('app_15', 'Travel Application', 'travel', 'Fictional trip planning and itinerary app', ['location', 'files', 'camera', 'microphone', 'contacts'], ['location', 'files'], { location: '2026-11-08T18:00:00.000Z' }),
+];
+
 export const seedData = () => ({
-  apps: [
-    { id: 'app_01', name: 'FitTrack (Fitness App)', description: 'Workout and route tracking app',
-      permissions: perms(['location', 'files'], { location: '2026-11-08T08:10:00.000Z' }), trustScore: 94,
-      status: APPLICATION_STATUS.ACTIVE, createdAt: T0, updatedAt: T0 },
-    { id: 'app_02', name: 'ShopEasy (Shopping App)', description: 'Online shopping with image search',
-      permissions: perms(['camera', 'files'], { camera: '2026-11-08T12:00:00.000Z' }), trustScore: 91,
-      status: APPLICATION_STATUS.ACTIVE, createdAt: T0, updatedAt: T0 },
-    { id: 'app_03', name: 'JotDown (Notes App)', description: 'Notes with photo and voice attachments',
-      permissions: perms(['camera', 'microphone', 'files'], { microphone: '2026-11-08T15:30:00.000Z' }), trustScore: 88,
-      status: APPLICATION_STATUS.ACTIVE, createdAt: T0, updatedAt: T0 },
-  ],
+  apps: DEMO_APPS.map((app) => ({
+    ...app,
+    permissions: Object.fromEntries(Object.entries(app.permissions).map(([resource, permission]) => [
+      resource,
+      { ...permission },
+    ])),
+  })),
   events: [
     { id: 'evt_0001', appId: 'app_01', resource: 'location', reason: 'Workout route tracking', timestamp: '2026-11-08T08:00:00.000Z', status: ACCESS_STATUS.ALLOWED, suspicious: false, alertId: null },
     { id: 'evt_0002', appId: 'app_01', resource: 'location', reason: 'Workout route tracking', timestamp: '2026-11-08T08:05:00.000Z', status: ACCESS_STATUS.ALLOWED, suspicious: false, alertId: null },

@@ -12,7 +12,7 @@ Root `package.json` uses plain ESM (`"type":"module"` in backend and frontend).
 ## Entities (all timestamps ISO 8601 UTC, ids strings)
 **Permission** (object everywhere): `{ enabled:boolean (req), grantedAt:ISO|null, lastAccessedAt:ISO|null }`. Application.permissions has exactly one key per RESOURCE_TYPES.
 
-**Application**: `id` (req, `app_01`), `name` (req), `description` (req), `permissions` (req), `trustScore` (req, int 0-100), `status` (req, active|suspended), `createdAt`, `updatedAt` (req). Derived on read: `trustLevel`.
+**Application**: `id` (req, `app_01`), `name` (req), `description` (req), `permissions` (req), `trustScore` (req, int 0-100), `status` (req, active|suspended), `createdAt`, `updatedAt` (req). Additive posture fields: `category`, `expectedPermissions` (resource list), `isDemo`, and `demoId`. Derived on read: `trustLevel`.
 ```json
 {"id":"app_01","name":"FitTrack","description":"Fitness tracking app","permissions":{"location":{"enabled":true,"grantedAt":"2026-11-01T09:00:00.000Z","lastAccessedAt":null},"contacts":{"enabled":false,"grantedAt":null,"lastAccessedAt":null},"camera":{"enabled":false,"grantedAt":null,"lastAccessedAt":null},"microphone":{"enabled":false,"grantedAt":null,"lastAccessedAt":null},"files":{"enabled":true,"grantedAt":"2026-11-01T09:00:00.000Z","lastAccessedAt":null}},"trustScore":94,"trustLevel":"high","status":"active","createdAt":"2026-11-01T09:00:00.000Z","updatedAt":"2026-11-01T09:00:00.000Z"}
 ```
@@ -37,6 +37,12 @@ Root `package.json` uses plain ESM (`"type":"module"` in backend and frontend).
 {"id":"ts_0001","appId":"app_01","previousScore":94,"newScore":79,"changeReason":"HIGH alert excessive_access: -15","timestamp":"2026-11-09T10:00:22.000Z","alertId":"alt_0001","penalty":15}
 ```
 ID format: `<prefix>_<zero-padded counter>` (`evt_`,`alt_`,`rec_`,`act_`,`ts_`); app ids `app_01..`. Counters owned by M1 store (`store.nextId(prefix)`).
+
+**SecurityFinding**: `id`, `appId`, `findingKey`, `findingType`, `title`, `severity`, `reason`, `permissionResources`, `relatedEventIds`, `alertIds`, `ruleId`, `recommendedAction`, `status` (`open|acknowledged|resolved`), `detectedAt`, `lastObservedAt`, and `history`. Findings reference existing application, event, and alert records; repeated references to one event must not create repeated risk penalties.
+
+**SecurityPolicy**: `ruleId`, `name`, `description`, `condition`, `severity`, `threshold`, `enabled`, and `recommendedAction`. Policies are configurable in the posture API. Demo policies are marked separately from user-created records.
+
+All demo applications and generated records use an explicit `isDemo` marker. The demo reset must only remove records carrying that marker; never infer demo ownership from an ID or delete unmarked data.
 
 ## Adding fields safely
 Only additive + optional. Post in team chat, M1 updates contracts.js/API_CONTRACTS.md/mockResponses/seed in one PR, everyone rebases. Never rename/remove/change type.

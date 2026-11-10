@@ -10,10 +10,13 @@ const eventSchema = new mongoose.Schema({
   suspicious: { type: Boolean, default: false, index: true },
   denialReason: { type: String, enum: ['permission_disabled', 'app_suspended', null], default: null },
   alertId: { type: mongoose.Schema.Types.ObjectId, ref: 'Alert', default: null },
+  isDemo: { type: Boolean, default: false, index: true },
+  demoId: { type: String, default: null },
 }, { timestamps: true, versionKey: false });
 
 eventSchema.index({ appId: 1, timestamp: -1 });
 eventSchema.index({ resource: 1 });
 eventSchema.index({ status: 1 });
+eventSchema.index({ demoId: 1 }, { unique: true, partialFilterExpression: { demoId: { $type: 'string' } } });
 
 export default mongoose.models.Event || mongoose.model('Event', eventSchema);

@@ -15,10 +15,14 @@ const permissionsSchema = new mongoose.Schema(
 const appSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true, immutable: true, trim: true },
   name: { type: String, required: true, trim: true },
+  category: { type: String, trim: true, default: 'unknown' },
   description: { type: String, required: true },
+  expectedPermissions: { type: [{ type: String, enum: RESOURCE_TYPES }], default: [] },
   status: { type: String, enum: Object.values(APPLICATION_STATUS), required: true, default: APPLICATION_STATUS.ACTIVE },
   trustScore: { type: Number, min: 0, max: 100, required: true },
   permissions: { type: permissionsSchema, required: true },
+  isDemo: { type: Boolean, default: false, index: true },
+  demoId: { type: String, default: null, index: true },
   revision: { type: Number, default: 0 },
 }, { timestamps: true, versionKey: false });
 

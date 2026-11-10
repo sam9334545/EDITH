@@ -7,6 +7,7 @@ import historyRoutes from './historyRoutes.js';
 import securityRoutes from './securityRoutes.js';
 import statsRoutes from './statsRoutes.js';
 import guardRouter from './guard.js';
+import postureRoutes from './postureRoutes.js';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/security', securityRoutes);
 
 // Runtime Guard: mode switch + decision log (GET/PATCH /api/guard/mode, GET /api/guard/decisions)
 router.use('/guard', guardRouter);
+router.use('/posture', postureRoutes);
 
 export default router;

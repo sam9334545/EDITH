@@ -10,6 +10,8 @@ const trustHistorySchema = new mongoose.Schema({
   alertId: { type: mongoose.Schema.Types.ObjectId, ref: 'Alert', default: null },
   penalty: { type: Number, min: 0, default: 0 },
   timestamp: { type: Date, required: true },
+  isDemo: { type: Boolean, default: false, index: true },
+  demoId: { type: String, default: null },
 }, { timestamps: true, versionKey: false });
 
 trustHistorySchema.index({ appId: 1, timestamp: -1 });
@@ -17,5 +19,6 @@ trustHistorySchema.index(
   { alertId: 1 },
   { unique: true, partialFilterExpression: { alertId: { $type: 'objectId' } } },
 );
+trustHistorySchema.index({ demoId: 1 }, { unique: true, partialFilterExpression: { demoId: { $type: 'string' } } });
 
 export default mongoose.models.TrustHistory || mongoose.model('TrustHistory', trustHistorySchema);

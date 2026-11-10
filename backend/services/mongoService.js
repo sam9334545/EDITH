@@ -21,6 +21,9 @@ import Alert from '../models/Alert.js';
 import TrustHistory from '../models/TrustHistory.js';
 import Recommendation from '../models/Recommendation.js';
 import ActivityHistory from '../models/ActivityHistory.js';
+import SecurityFinding from '../models/SecurityFinding.js';
+import SecurityPolicy from '../models/SecurityPolicy.js';
+import { seedPostureDemoData } from './demoDataService.js';
 import { mongoose as dbMongoose } from '../database/connection.js';
 import { analyzeEvent } from './anomalyDetection.js';
 import { calculateTrustScore, changeReasonFor, penaltyFor, buildScoreExplanation } from './trustScore.js';
@@ -178,6 +181,30 @@ export async function seedApplications(session = null) {
     timestamps: false,
     ...(session ? { session } : {}),
   });
+  const demoApps = await App.find({
+    id: { $in: apps.map((app) => app.id) },
+    isDemo: true,
+  }).session(session || null);
+  for (const app of demoApps) {
+    await TrustHistory.updateOne(
+      { demoId: `profile-score:${app.id}` },
+      {
+        $setOnInsert: {
+          appId: app._id,
+          previousScore: 100,
+          newScore: app.trustScore,
+          change: app.trustScore - 100,
+          reason: 'Initial deterministic permission profile assessment',
+          changeReason: `Initial profile score from declared and granted permissions: ${app.trustScore}`,
+          penalty: 100 - app.trustScore,
+          timestamp: app.createdAt,
+          isDemo: true,
+          demoId: `profile-score:${app.id}`,
+        },
+      },
+      { upsert: true, session },
+    );
+  }
   return App.countDocuments({ id: { $in: apps.map((app) => app.id) } }).session(session || null);
 }
 
@@ -746,13 +773,20 @@ export async function resetDemoData() {
     throw serviceError('RESET_DISABLED', 'Demo reset requires development mode and ALLOW_DEMO_RESET=true');
   }
   return transaction(async (session) => {
-    await ActivityHistory.deleteMany({}).session(session);
-    await Recommendation.deleteMany({}).session(session);
-    await TrustHistory.deleteMany({}).session(session);
-    await Alert.deleteMany({}).session(session);
-    await Event.deleteMany({}).session(session);
-    await App.deleteMany({}).session(session);
+    const demoApps = await App.find({ isDemo: true }).select('_id').session(session);
+    const demoAppIds = demoApps.map((app) => app._id);
+    if (demoAppIds.length) {
+      await ActivityHistory.deleteMany({ appId: { $in: demoAppIds }, isDemo: true }).session(session);
+      await Recommendation.deleteMany({ appId: { $in: demoAppIds }, isDemo: true }).session(session);
+      await TrustHistory.deleteMany({ appId: { $in: demoAppIds }, isDemo: true }).session(session);
+      await SecurityFinding.deleteMany({ appId: { $in: demoAppIds }, isDemo: true }).session(session);
+      await Alert.deleteMany({ appId: { $in: demoAppIds }, isDemo: true }).session(session);
+      await Event.deleteMany({ appId: { $in: demoAppIds }, isDemo: true }).session(session);
+      await App.deleteMany({ _id: { $in: demoAppIds }, isDemo: true }).session(session);
+    }
+    await SecurityPolicy.deleteMany({ isDemo: true }).session(session);
     await seedApplications(session);
+    await seedPostureDemoData(session);
     return { reset: true };
   });
 }

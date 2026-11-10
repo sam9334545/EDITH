@@ -5,8 +5,19 @@ import Alert from '../models/Alert.js';
 import TrustHistory from '../models/TrustHistory.js';
 import Recommendation from '../models/Recommendation.js';
 import ActivityHistory from '../models/ActivityHistory.js';
+import SecurityFinding from '../models/SecurityFinding.js';
+import SecurityPolicy from '../models/SecurityPolicy.js';
 
-const models = [App, Event, Alert, TrustHistory, Recommendation, ActivityHistory];
+const models = [
+  App,
+  Event,
+  Alert,
+  TrustHistory,
+  Recommendation,
+  ActivityHistory,
+  SecurityFinding,
+  SecurityPolicy,
+];
 let listenersAttached = false;
 let disconnectInProgress = false;
 

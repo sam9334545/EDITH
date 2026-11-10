@@ -75,7 +75,9 @@ export function analyzeEvent(event, app, recentEvents = []) {
   const deniedAttempts5m = appEvents.filter(
     (e) => e.status === ACCESS_STATUS.DENIED &&
       // Guard policy blocks (rate limit etc.) are not "restricted resource" attempts.
-      e.denialReason !== 'rate_limit_exceeded' && e.denialReason !== 'policy_violation' &&
+      e.denialReason !== 'rate_limit_exceeded' &&
+      e.denialReason !== 'policy_violation' &&
+      e.denialReason !== 'app_suspended' &&
       new Date(e.timestamp).getTime() >= window300s
   );
 

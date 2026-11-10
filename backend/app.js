@@ -63,7 +63,14 @@ app.use((error, req, res, next) => {
     || error.code === 'RESOURCE_INVALID'
     || error.name === 'ValidationError'
     || error.name === 'CastError';
-  const notFound = ['APP_NOT_FOUND', 'RECOMMENDATION_NOT_FOUND', 'ALERT_NOT_FOUND'].includes(error.code);
+  const notFound = [
+    'APP_NOT_FOUND',
+    'RECOMMENDATION_NOT_FOUND',
+    'ALERT_NOT_FOUND',
+    'FINDING_NOT_FOUND',
+    'POLICY_NOT_FOUND',
+    'INCIDENT_NOT_FOUND',
+  ].includes(error.code);
   const resetDisabled = error.code === 'RESET_DISABLED';
   const databaseUnavailable = [
     'MongooseServerSelectionError',

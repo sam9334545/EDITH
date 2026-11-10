@@ -1,8 +1,33 @@
 // Trust Score (Feature 3) - PURE, deterministic functions. No store access, no I/O.
 // Constants come from TRUST_CONFIG in shared/contracts.js. Do not redefine them here.
-import { TRUST_CONFIG, trustLevelFor } from '../../shared/contracts.js';
+import {
+  POSTURE_CONFIG,
+  RESOURCE_TYPES,
+  TRUST_CONFIG,
+  trustLevelFor,
+} from '../../shared/contracts.js';
 
 const clamp = (n) => Math.min(TRUST_CONFIG.MAX, Math.max(TRUST_CONFIG.MIN, n));
+
+export function calculateInitialProfileScore(app) {
+  const expected = new Set(Array.isArray(app?.expectedPermissions) ? app.expectedPermissions : []);
+  const granted = RESOURCE_TYPES.filter((resource) => app?.permissions?.[resource]?.enabled === true);
+  let penalty = granted.reduce((total, resource) => (
+    total + POSTURE_CONFIG.SCORE.RESOURCE_PENALTY[resource]
+  ), 0);
+
+  penalty += granted.filter((resource) => !expected.has(resource)).length
+    * POSTURE_CONFIG.SCORE.EXCESSIVE_PERMISSION_PENALTY;
+
+  for (const combination of POSTURE_CONFIG.RISKY_COMBINATIONS) {
+    if (combination.allowedCategories.includes(app?.category)) continue;
+    if (combination.resources.every((resource) => granted.includes(resource))) {
+      penalty += POSTURE_CONFIG.SCORE.RISKY_COMBINATION_PENALTY;
+    }
+  }
+
+  return clamp(POSTURE_CONFIG.SCORE.MAX - penalty);
+}
 
 /** Penalty (positive integer) for one alert severity. Unknown severity -> 0. */
 export function penaltyFor(severity) {
@@ -74,4 +99,10 @@ export function buildScoreExplanation(historyRows = [], currentScore) {
   return lines;
 }
 
-export default { penaltyFor, changeReasonFor, calculateTrustScore, buildScoreExplanation };
+export default {
+  calculateInitialProfileScore,
+  penaltyFor,
+  changeReasonFor,
+  calculateTrustScore,
+  buildScoreExplanation,
+};
