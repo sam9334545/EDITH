@@ -91,6 +91,23 @@ export const api = {
     `/posture/policies/${encodeURIComponent(ruleId)}`,
     { method: 'PATCH', body },
   ),
+  // Behavioural DNA Engine
+  getDnaBaselines: (params = {}) => request(`/dna/baselines${queryString(params)}`),
+  getAppBaselines: (appId) => request(`/dna/baselines/${encodeURIComponent(appId)}`),
+  getDnaProfile: (appId) => request(`/dna/profile/${encodeURIComponent(appId)}`),
+  recalculateBaselines: (appId) => request(`/dna/baselines/${encodeURIComponent(appId)}/recalculate`, { method: 'POST' }),
+
+  // Adaptive Trust Engine
+  getAdaptiveConfig: () => request('/adaptive/config'),
+  updateAdaptiveConfig: (body) => request('/adaptive/config', { method: 'PATCH', body }),
+  getAdaptiveProfile: (appId) => request(`/adaptive/${encodeURIComponent(appId)}`),
+  recoverAdaptiveTrust: (appId, body) => request(`/adaptive/${encodeURIComponent(appId)}/recover`, { method: 'POST', body }),
+  checkCleanStreak: (appId) => request(`/adaptive/${encodeURIComponent(appId)}/streak-check`, { method: 'POST' }),
+
+  // Runtime Guard
+  getGuardMode: () => request('/guard/mode'),
+  updateGuardMode: (mode) => request('/guard/mode', { method: 'PATCH', body: { mode } }),
+  getGuardDecisions: (params = {}) => request(`/guard/decisions${queryString(params)}`),
 };
 
 export { API_BASE_URL };

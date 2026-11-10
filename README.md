@@ -284,6 +284,39 @@ Maintains an append-only ledger of all platform occurrences, formatted to meet e
 
 ---
 
+### 8. Cloud-Native Application Protection Platform (CNAPP) & Posture Overview
+Provides unified visibility into risk-adjusted application posture, open security findings, and real-time compliance policies.
+
+* **Risk-Adjusted Posture Metrics**: Continuous aggregation of critical, high, and moderate risk applications based on active permissions and telemetry.
+* **Security Findings & Incidents**: Automated tracking of excessive access, unused permissions, and sensitive resource exposure with one-click resolution.
+* **Policy Management**: Dynamically configure and tune compliance rules across workspace applications.
+
+![CNAPP Security Posture](docs/screenshots/posture.png)
+
+---
+
+### 9. Behavioral DNA Profiling Engine
+Continuously tracks and establishes deterministic behavioral baselines for every installed application across 5 critical resource vectors.
+
+* **Usage Pattern Taxonomy**: Categorizes runtime access into `Routine Periodic`, `Sporadic Access`, `Burst Expected`, and `Dormant`.
+* **Velocity & Interval Profiling**: Calculates rolling access velocity (calls/hr) and typical inter-request intervals.
+* **Multi-Factor Drift Formulation**: Evaluates Resource Shift (40%), Velocity Spikes (35%), and Timing Anomalies (25%). Composite scores $\ge 50$ trigger automated `BEHAVIOURAL_DRIFT` alerts.
+
+![Behavioral DNA Engine](docs/screenshots/dna.png)
+
+---
+
+### 10. Adaptive Trust Engine & Administrative Recovery Console
+Closed-loop behavioral trust governance featuring repeated-violation escalation, clean streak bonuses, and administrative score recovery.
+
+* **Repeated-Violation Escalation**: Applies a $1.5\times$ penalty multiplier when identical threats reoccur within a 5-minute escalation window.
+* **Clean Usage Streak Credits**: Automatically awards progressive $+2\text{ pts}$ recovery when an application demonstrates 10 consecutive permitted requests without violations.
+* **Administrative Recovery Console**: Enables security teams to award custom recovery credits ($1\text{--}50\text{ pts}$) accompanied by mandatory audit verification logs.
+
+![Adaptive Trust Engine](docs/screenshots/adaptive.png)
+
+---
+
 ## 🎨 Design System & Visual Identity
 
 The user interface of EDITH was meticulously designed with inspiration from modern engineering portfolios:

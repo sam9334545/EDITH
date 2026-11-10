@@ -1442,3 +1442,375 @@ tbody tr:hover { background: rgba(240, 249, 245, 0.6); }
 @media (max-width: 460px) {
   .intelligence-card-heading, .policy-rule-heading { align-items: center; }
 }
+
+
+/* ==========================================================================
+   BEHAVIOURAL DNA & ADAPTIVE TRUST ENGINES
+   ========================================================================== */
+
+.dna-header-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-alt) 100%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.dna-meta h3 {
+  margin: 4px 0 2px;
+  font-size: 20px;
+  color: var(--mint-950);
+}
+
+.dna-score-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.ring-caption {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--quiet);
+}
+
+.baseline-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.baseline-card {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.baseline-card:hover {
+  border-color: var(--mint-400);
+  box-shadow: 0 4px 16px rgba(26, 77, 58, 0.06);
+  transform: translateY(-1px);
+}
+
+.sensitive-card {
+  border-left: 3px solid var(--terracotta);
+}
+
+.baseline-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.resource-icon-badge {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--surface-alt);
+  border-radius: 8px;
+}
+
+.resource-name-box {
+  flex: 1;
+  min-width: 0;
+}
+
+.resource-name-box strong {
+  display: block;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.resource-name-box small {
+  font-size: 10px;
+  color: var(--quiet);
+}
+
+.baseline-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface-alt);
+  border-radius: 8px;
+}
+
+.metric-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metric-label {
+  font-size: 9px;
+  color: var(--quiet);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.metric-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mint-900);
+}
+
+.dna-vector-track {
+  height: 6px;
+  background: var(--divider);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.dna-vector-fill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.3s ease;
+}
+
+.tone-success { background: var(--mint-500); }
+.tone-neutral { background: var(--quiet); }
+.tone-warning { background: var(--amber); }
+.tone-quiet { background: #cbd5e1; }
+
+.dna-weight-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.weight-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.weight-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.weight-meta strong {
+  color: var(--ink);
+}
+
+.weight-meta span {
+  font-weight: 700;
+  color: var(--mint-700);
+}
+
+.weight-item small {
+  font-size: 10px;
+  color: var(--quiet);
+}
+
+.progress-track {
+  height: 8px;
+  background: var(--surface-alt);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.progress-danger { background: var(--danger); }
+.progress-warning { background: var(--amber); }
+.progress-info { background: var(--mint-600); }
+
+.pattern-guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pattern-guide-item {
+  padding: 10px;
+  background: var(--surface-alt);
+  border-radius: 8px;
+}
+
+.pattern-guide-item p {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ADAPTIVE TRUST PAGE */
+
+.risk-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 22px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.risk-banner-success {
+  background: linear-gradient(135deg, rgba(212, 237, 226, 0.45) 0%, rgba(240, 249, 245, 0.9) 100%);
+  border-color: var(--mint-300);
+}
+
+.risk-banner-warning {
+  background: linear-gradient(135deg, rgba(254, 243, 199, 0.5) 0%, rgba(255, 251, 235, 0.9) 100%);
+  border-color: #fde68a;
+}
+
+.risk-banner-danger {
+  background: linear-gradient(135deg, rgba(254, 226, 226, 0.5) 0%, rgba(254, 242, 242, 0.9) 100%);
+  border-color: #fca5a5;
+}
+
+.score-meter-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.score-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--quiet);
+}
+
+.factors-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.factor-box {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.factor-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.factor-stat {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--mint-900);
+}
+
+.factor-box small {
+  font-size: 10px;
+  color: var(--quiet);
+}
+
+.config-editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.config-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  background: var(--surface-alt);
+  border-radius: 8px;
+}
+
+.config-meta strong {
+  display: block;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.config-meta small {
+  display: block;
+  font-size: 10px;
+  color: var(--quiet);
+  margin-top: 2px;
+}
+
+/* DASHBOARD ENGINE SHOWCASE */
+
+.engine-showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.engine-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px;
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-alt) 100%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.engine-card:hover {
+  border-color: var(--mint-500);
+  box-shadow: 0 6px 20px rgba(26, 77, 58, 0.08);
+  transform: translateY(-2px);
+}
+
+.engine-card-icon {
+  font-size: 26px;
+  line-height: 1;
+  padding: 10px;
+  background: var(--surface-mint);
+  border-radius: 10px;
+  border: 1px solid var(--mint-200);
+}
+
+.engine-card-content h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--mint-950);
+}
+
+.engine-card-content p {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.engine-card-link {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mint-700);
+}
