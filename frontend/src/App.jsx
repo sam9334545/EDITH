@@ -424,7 +424,11 @@ function AlertRows({ alerts, apps, events, onAcknowledge, onView, busyId }) {
 }
 
 function App() {
-  const [page, setPage] = useState('overview');
+  const [page, setPage] = useState(() => {
+    if (typeof window === 'undefined') return 'overview';
+    const hash = window.location.hash.replace('#', '');
+    return ['overview', 'applications', 'permissions', 'monitoring', 'security', 'trust', 'recommendations', 'history'].includes(hash) ? hash : 'overview';
+  });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [apps, setApps] = useState([]);
   const [events, setEvents] = useState([]);
@@ -702,8 +706,22 @@ function App() {
     });
   }
 
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (['overview', 'applications', 'permissions', 'monitoring', 'security', 'trust', 'recommendations', 'history'].includes(hash)) {
+        setPage(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
+
   const navigate = (nextPage) => {
     setPage(nextPage);
+    if (typeof window !== 'undefined') {
+      window.location.hash = nextPage;
+    }
     setMobileNavOpen(false);
   };
 
