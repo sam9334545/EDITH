@@ -1,20 +1,38 @@
 import { useCallback, useEffect, useState } from 'react';
-import { RESOURCE_TYPES, SENSITIVE_RESOURCES, USAGE_PATTERNS } from '@shared/contracts.js';
+import {
+  Activity,
+  AlertTriangle,
+  AppWindow,
+  Calendar,
+  CircleDot,
+  RefreshCw,
+  Zap,
+} from 'lucide-react';
+import {
+  BEHAVIOURAL_DNA_CONFIG,
+  RESOURCE_TYPES,
+  SENSITIVE_RESOURCES,
+  USAGE_PATTERNS,
+} from '@shared/contracts.js';
 import { api } from '../services/api.js';
+import EmptyState from '../components/common/EmptyState.jsx';
+import ErrorState from '../components/common/ErrorState.jsx';
+import LoadingState from '../components/common/LoadingState.jsx';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Panel from '../components/common/Panel.jsx';
+import ProductIllustration from '../components/common/ProductIllustration.jsx';
+import StatCard from '../components/common/StatCard.jsx';
 import StatusBadge from '../components/common/StatusBadge.jsx';
 import TrustRing from '../components/common/TrustRing.jsx';
-import EmptyState from '../components/common/EmptyState.jsx';
-import LoadingState from '../components/common/LoadingState.jsx';
-import ErrorState from '../components/common/ErrorState.jsx';
-import { formatDate, humanize } from '../utils/formatters.js';
+import { ResourceIcon } from '../components/common/AppIcon.jsx';
+import { ResourceBaselineChart } from '../components/charts/SecurityCharts.jsx';
+import { formatDate } from '../utils/formatters.js';
 
-const PATTERN_COLORS = {
-  [USAGE_PATTERNS.ROUTINE_PERIODIC]: { tone: 'success', label: 'Routine Periodic', icon: '↻' },
-  [USAGE_PATTERNS.SPORADIC]: { tone: 'neutral', label: 'Sporadic Access', icon: '∿' },
-  [USAGE_PATTERNS.BURST_EXPECTED]: { tone: 'warning', label: 'Burst Expected', icon: '⚡' },
-  [USAGE_PATTERNS.DORMANT]: { tone: 'quiet', label: 'Dormant (Unused)', icon: '○' },
+const PATTERN_META = {
+  [USAGE_PATTERNS.ROUTINE_PERIODIC]: { tone: 'success', label: 'Routine Periodic', Icon: RefreshCw },
+  [USAGE_PATTERNS.SPORADIC]: { tone: 'neutral', label: 'Sporadic Access', Icon: Activity },
+  [USAGE_PATTERNS.BURST_EXPECTED]: { tone: 'warning', label: 'Burst Expected', Icon: Zap },
+  [USAGE_PATTERNS.DORMANT]: { tone: 'muted', label: 'Dormant', Icon: CircleDot },
 };
 
 const RESOURCE_LABELS = {
@@ -25,14 +43,6 @@ const RESOURCE_LABELS = {
   files: 'Storage & Document Files',
 };
 
-const RESOURCE_ICONS = {
-  location: '📍',
-  contacts: '👥',
-  camera: '📷',
-  microphone: '🎙️',
-  files: '📁',
-};
-
 export function BehaviouralDnaPage({ apps = [], onNotify }) {
   const [selectedAppId, setSelectedAppId] = useState(() => apps[0]?.id || 'app_01');
   const [dnaProfile, setDnaProfile] = useState(null);
@@ -40,7 +50,6 @@ export function BehaviouralDnaPage({ apps = [], onNotify }) {
   const [error, setError] = useState(null);
   const [recalculating, setRecalculating] = useState(false);
 
-  // Sync selectedAppId when apps populate
   useEffect(() => {
     if (!selectedAppId && apps.length > 0) {
       setSelectedAppId(apps[0].id);
@@ -55,7 +64,7 @@ export function BehaviouralDnaPage({ apps = [], onNotify }) {
       const data = await api.getDnaProfile(appId);
       setDnaProfile(data);
     } catch (err) {
-      setError(err.message || 'Failed to load Behavioural DNA profile');
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -70,10 +79,10 @@ export function BehaviouralDnaPage({ apps = [], onNotify }) {
     setRecalculating(true);
     try {
       const result = await api.recalculateBaselines(selectedAppId);
-      onNotify?.(result.message || 'Baselines recalculated successfully!', 'success');
+      onNotify?.(result.message || 'Baselines recalculated successfully.', 'success');
       await loadProfile(selectedAppId);
     } catch (err) {
-      onNotify?.(err.message || 'Recalculation failed', 'danger');
+      onNotify?.(err.message || 'Recalculation failed', 'error');
     } finally {
       setRecalculating(false);
     }
@@ -81,22 +90,32 @@ export function BehaviouralDnaPage({ apps = [], onNotify }) {
 
   const selectedApp = apps.find((a) => a.id === selectedAppId);
   const baselines = dnaProfile?.baselines || [];
+  const fullBaselines = RESOURCE_TYPES.map((resource) => baselines.find((b) => b.resource === resource) || {
+    resource,
+    averageAccessFrequency: 0,
+    expectedUsagePattern: USAGE_PATTERNS.DORMANT,
+    accessCount: 0,
+    typicalIntervalMs: null,
+    lastAccessTimestamp: null,
+  });
+
+  const weights = BEHAVIOURAL_DNA_CONFIG.WEIGHTS;
 
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="CONTINUOUS APPLICATION PROFILING"
+        eyebrow="Continuous heuristic application profiling"
         title="Behavioral DNA Engine"
-        description="Heuristic telemetry engine tracking resource frequency baselines, typical invocation intervals, and behavioral drift detection."
-        actions={
-          <div className="action-row">
+        description="Deterministic telemetry profiling engine tracking per-resource frequency baselines, typical invocation intervals, and multi-factor behavioral drift."
+        actions={(
+          <>
             <button
               type="button"
-              className="button button-secondary"
+              className="button"
               onClick={() => loadProfile(selectedAppId)}
               disabled={loading || recalculating}
             >
-              ↻ Refresh
+              <RefreshCw size={14} aria-hidden="true" /> Refresh
             </button>
             <button
               type="button"
@@ -104,48 +123,74 @@ export function BehaviouralDnaPage({ apps = [], onNotify }) {
               onClick={handleRecalculate}
               disabled={loading || recalculating}
             >
-              {recalculating ? 'Profiling...' : '⚡ Recalculate Baselines'}
+              <Zap size={14} aria-hidden="true" />
+              {recalculating ? 'Profiling…' : 'Recalculate Baselines'}
             </button>
-          </div>
-        }
+          </>
+        )}
       />
 
-      {/* Top Level Metric Highlights */}
-      <div className="kpi-grid">
-        <article className="kpi-card kpi-success">
-          <div className="kpi-topline"><span>MONITORED WORKSPACE APPS</span><span className="kpi-icon">▦</span></div>
-          <div className="kpi-value">{apps.length}<small>apps</small></div>
-          <p>Continuous runtime behavioral profiling enabled</p>
-        </article>
-        <article className="kpi-card kpi-neutral">
-          <div className="kpi-topline"><span>BASELINE WINDOW</span><span className="kpi-icon">📅</span></div>
-          <div className="kpi-value">7<small>days</small></div>
-          <p>Rolling historical window for baseline derivation</p>
-        </article>
-        <article className="kpi-card kpi-warning">
-          <div className="kpi-topline"><span>SPIKE THRESHOLD</span><span className="kpi-icon">⚡</span></div>
-          <div className="kpi-value">3.0<small>x</small></div>
-          <p>Access velocity exceeding 3x triggers drift alert</p>
-        </article>
-        <article className="kpi-card kpi-danger">
-          <div className="kpi-topline"><span>COMPOSITE DRIFT GATE</span><span className="kpi-icon">⚠️</span></div>
-          <div className="kpi-value">50<small>/100</small></div>
-          <p>Deviation score threshold for RASP quarantine</p>
-        </article>
+      <div className="split-intro-banner">
+        <div className="split-intro-copy">
+          <span className="eyebrow">Baseline Derivation &amp; Drift Gate</span>
+          <h2>Heuristic Telemetry Fingerprint</h2>
+          <p>
+            E.D.I.T.H. derives deterministic per-resource baselines from simulated historical events across a rolling {BEHAVIOURAL_DNA_CONFIG.BASELINE_WINDOW} window. When live runtime calls exceed {BEHAVIOURAL_DNA_CONFIG.FREQUENCY_SPIKE_RATIO}x baseline velocity, compress below {Math.round(BEHAVIOURAL_DNA_CONFIG.BURST_BURST_MAX_INTERVAL_MS / 1000)}s intervals, or shift to dormant resources, composite drift crosses {BEHAVIOURAL_DNA_CONFIG.SCORE_THRESHOLD}/100 and triggers Runtime Guard alerts.
+          </p>
+        </div>
+        <ProductIllustration
+          src="/assets/behavioral-dna-engine.webp"
+          alt="Central application node with steady green behavioral baseline ribbon and an amber-crimson drift spike crossing a detection threshold"
+          variant="compact"
+        />
       </div>
 
-      {/* Main DNA Grid */}
+      <div className="kpi-grid kpi-grid-4">
+        <StatCard
+          label="Monitored apps"
+          value={apps.length}
+          suffix="apps"
+          detail="Heuristic profiling enabled"
+          icon={<AppWindow size={15} />}
+          tone="success"
+        />
+        <StatCard
+          label="Baseline window"
+          value={7}
+          suffix="days"
+          detail="Rolling historical derivation"
+          icon={<Calendar size={15} />}
+          tone="neutral"
+        />
+        <StatCard
+          label="Spike threshold"
+          value={BEHAVIOURAL_DNA_CONFIG.FREQUENCY_SPIKE_RATIO.toFixed(1)}
+          suffix="x"
+          detail="Velocity ratio flagging drift"
+          icon={<Zap size={15} />}
+          tone="warning"
+        />
+        <StatCard
+          label="Composite drift gate"
+          value={BEHAVIOURAL_DNA_CONFIG.SCORE_THRESHOLD}
+          suffix="/100"
+          detail="Threshold for BEHAVIOURAL_DRIFT alert"
+          icon={<AlertTriangle size={15} />}
+          tone="danger"
+        />
+      </div>
+
       <div className="dashboard-grid dashboard-grid-main">
-        {/* Left Column: DNA Profile & Baselines */}
         <div className="stack">
           <Panel
-            title="Application DNA Profile"
-            action={
-              <div className="select-wrap">
+            title="Application DNA profile"
+            eyebrow="Per-resource access signature"
+            action={(
+              <label className="field inline-select-field">
+                <span>Target Application</span>
                 <select
                   value={selectedAppId}
                   onChange={(e) => setSelectedAppId(e.target.value)}
-                  className="select-field"
                   aria-label="Select Application"
                 >
                   {apps.map((app) => (
@@ -154,23 +199,27 @@ export function BehaviouralDnaPage({ apps = [], onNotify }) {
                     </option>
                   ))}
                 </select>
-              </div>
-            }
+              </label>
+            )}
           >
             {loading ? (
-              <LoadingState message="Synthesizing behavioral DNA baselines..." />
+              <LoadingState label="Loading behavioral DNA baselines" />
             ) : error ? (
-              <ErrorState title="DNA Analysis Unavailable" message={error} />
+              <ErrorState title="DNA analysis unavailable" error={error} />
             ) : !dnaProfile ? (
-              <EmptyState title="No Profile Found">Select an application to view its behavioral fingerprint.</EmptyState>
+              <EmptyState title="No profile found">
+                Select an application to inspect its behavioral fingerprint.
+              </EmptyState>
             ) : (
               <div className="dna-profile-summary">
                 <div className="dna-header-card">
                   <div className="dna-meta">
-                    <span className="text-overline">APPLICATION IDENTITY</span>
+                    <span className="eyebrow">Application identity</span>
                     <h3>{dnaProfile.appName || selectedApp?.name}</h3>
-                    <p className="text-subtle">App ID: <code>{dnaProfile.appId}</code></p>
-                    <div className="chip-cluster" style={{ marginTop: '8px' }}>
+                    <p className="dna-id-line">
+                      App ID: <code>{dnaProfile.appId}</code> · Updated {formatDate(dnaProfile.updatedAt)}
+                    </p>
+                    <div className="chip-cluster">
                       <StatusBadge tone={dnaProfile.status === 'active' ? 'success' : 'danger'}>
                         {dnaProfile.status?.toUpperCase()}
                       </StatusBadge>
@@ -183,49 +232,54 @@ export function BehaviouralDnaPage({ apps = [], onNotify }) {
                     </div>
                   </div>
                   <div className="dna-score-ring">
-                    <TrustRing score={dnaProfile.trustScore ?? selectedApp?.trustScore ?? 80} size={84} />
+                    <TrustRing score={dnaProfile.trustScore ?? selectedApp?.trustScore ?? 0} size="medium" />
                     <span className="ring-caption">Trust Score</span>
                   </div>
                 </div>
 
+                <div className="dna-chart-section">
+                  <div className="section-title-row">
+                    <h4>Resource access frequency vs. call volume</h4>
+                    <span className="badge badge-neutral">5-Vector Comparison</span>
+                  </div>
+                  <ResourceBaselineChart baselines={fullBaselines} />
+                </div>
+
                 <div className="dna-baselines-list">
                   <div className="section-title-row">
-                    <h4>Observed Resource Baselines & Access Signatures</h4>
-                    <span className="badge badge-neutral">5 Vector Analysis</span>
+                    <h4>Observed resource baselines &amp; invocation intervals</h4>
+                    <span className="badge badge-neutral">Window: {BEHAVIOURAL_DNA_CONFIG.BASELINE_WINDOW}</span>
                   </div>
 
                   <div className="baseline-cards-grid">
-                    {RESOURCE_TYPES.map((resource) => {
-                      const base = baselines.find((b) => b.resource === resource) || {
-                        resource,
-                        averageAccessFrequency: 0,
-                        expectedUsagePattern: USAGE_PATTERNS.DORMANT,
-                        accessCount: 0,
-                        typicalIntervalMs: null,
-                      };
-                      const pattern = PATTERN_COLORS[base.expectedUsagePattern] || PATTERN_COLORS[USAGE_PATTERNS.DORMANT];
-                      const isSensitive = SENSITIVE_RESOURCES.includes(resource);
+                    {fullBaselines.map((base) => {
+                      const pattern = PATTERN_META[base.expectedUsagePattern] || PATTERN_META[USAGE_PATTERNS.DORMANT];
+                      const PatternIcon = pattern.Icon;
+                      const isSensitive = SENSITIVE_RESOURCES.includes(base.resource);
 
                       return (
-                        <div className={`baseline-card ${isSensitive ? 'sensitive-card' : ''}`} key={resource}>
+                        <div className={`baseline-card ${isSensitive ? 'sensitive-card' : ''}`} key={base.resource}>
                           <div className="baseline-card-top">
-                            <span className="resource-icon-badge">{RESOURCE_ICONS[resource] || '🔹'}</span>
+                            <span className="resource-icon-badge" aria-hidden="true">
+                              <ResourceIcon resource={base.resource} size={17} />
+                            </span>
                             <div className="resource-name-box">
-                              <strong>{RESOURCE_LABELS[resource] || resource}</strong>
+                              <strong>{RESOURCE_LABELS[base.resource] || base.resource}</strong>
                               <small>{isSensitive ? 'Sensitive Resource' : 'Standard Resource'}</small>
                             </div>
-                            <span className={`badge badge-${pattern.tone}`}>
-                              <i className="badge-symbol">{pattern.icon}</i> {pattern.label}
-                            </span>
+                            <StatusBadge tone={pattern.tone}>
+                              <PatternIcon size={11} style={{ marginRight: '4px' }} aria-hidden="true" />
+                              {pattern.label}
+                            </StatusBadge>
                           </div>
 
                           <div className="baseline-metrics-grid">
                             <div className="metric-box">
-                              <span className="metric-label">Access Velocity</span>
+                              <span className="metric-label">Access rate</span>
                               <span className="metric-value">{base.averageAccessFrequency ?? 0} <small>/hr</small></span>
                             </div>
                             <div className="metric-box">
-                              <span className="metric-label">Total Calls</span>
+                              <span className="metric-label">Total calls</span>
                               <span className="metric-value">{base.accessCount ?? 0}</span>
                             </div>
                             <div className="metric-box">
@@ -236,14 +290,8 @@ export function BehaviouralDnaPage({ apps = [], onNotify }) {
                             </div>
                           </div>
 
-                          {/* Access Pattern Progress Indicator */}
-                          <div className="dna-vector-track">
-                            <div
-                              className={`dna-vector-fill tone-${pattern.tone}`}
-                              style={{
-                                width: `${Math.min(100, Math.max(8, (base.accessCount || 0) * 12))}%`,
-                              }}
-                            />
+                          <div className="baseline-footer-row">
+                            <span>Last seen: {formatDate(base.lastAccessTimestamp)}</span>
                           </div>
                         </div>
                       );
@@ -255,76 +303,72 @@ export function BehaviouralDnaPage({ apps = [], onNotify }) {
           </Panel>
         </div>
 
-        {/* Right Column: DNA Heuristic Architecture & Weights */}
         <div className="stack">
-          <Panel title="DNA Detection Architecture & Threat Model">
-            <div className="info-block">
-              <h4>Multi-Factor Drift Formulation</h4>
-              <p className="text-subtle">
-                EDITH derives a composite behavioral deviation metric by evaluating current runtime telemetry against established historical baselines.
+          <Panel title="Multi-factor drift formulation" eyebrow="Heuristic weighting model">
+            <p className="panel-note">
+              E.D.I.T.H. derives a composite behavioral deviation score (0–100) using deterministic heuristic rules—not black-box ML—comparing current requests against established baselines.
+            </p>
+
+            <div className="dna-weight-bars">
+              <div className="weight-item">
+                <div className="weight-meta">
+                  <strong>Resource Shift</strong>
+                  <span>{weights.RESOURCE_SHIFT}% Weight</span>
+                </div>
+                <div className="progress-track">
+                  <div className="progress-bar progress-danger" style={{ width: `${weights.RESOURCE_SHIFT}%` }} />
+                </div>
+                <small>Accessing unexpected or historically dormant permissions</small>
+              </div>
+
+              <div className="weight-item">
+                <div className="weight-meta">
+                  <strong>Velocity &amp; Frequency Spike</strong>
+                  <span>{weights.FREQUENCY_SPIKE}% Weight</span>
+                </div>
+                <div className="progress-track">
+                  <div className="progress-bar progress-warning" style={{ width: `${weights.FREQUENCY_SPIKE}%` }} />
+                </div>
+                <small>Bursts occurring at &gt;{BEHAVIOURAL_DNA_CONFIG.FREQUENCY_SPIKE_RATIO.toFixed(1)}x above rolling hourly baseline</small>
+              </div>
+
+              <div className="weight-item">
+                <div className="weight-meta">
+                  <strong>Interval &amp; Timing Anomalies</strong>
+                  <span>{weights.UNUSUAL_TIMING}% Weight</span>
+                </div>
+                <div className="progress-track">
+                  <div className="progress-bar progress-info" style={{ width: `${weights.UNUSUAL_TIMING}%` }} />
+                </div>
+                <small>Rapid-fire bursts below {BEHAVIOURAL_DNA_CONFIG.BURST_BURST_MAX_INTERVAL_MS}ms inter-request interval</small>
+              </div>
+            </div>
+
+            <div className="callout callout-mint">
+              <strong>Zero-Drift Enforcement Gate</strong>
+              <p>
+                When composite deviation reaches {BEHAVIOURAL_DNA_CONFIG.SCORE_THRESHOLD}/100, Runtime Guard flags <code>BEHAVIOURAL_DRIFT</code>, emits a High severity alert, and enforces block rules in Protect/Strict modes.
               </p>
-
-              <div className="dna-weight-bars">
-                <div className="weight-item">
-                  <div className="weight-meta">
-                    <strong>Resource Shift</strong>
-                    <span>40% Weight</span>
-                  </div>
-                  <div className="progress-track">
-                    <div className="progress-bar progress-danger" style={{ width: '40%' }} />
-                  </div>
-                  <small>Accessing unexpected or historically dormant permissions</small>
-                </div>
-
-                <div className="weight-item">
-                  <div className="weight-meta">
-                    <strong>Velocity & Frequency Spike</strong>
-                    <span>35% Weight</span>
-                  </div>
-                  <div className="progress-track">
-                    <div className="progress-bar progress-warning" style={{ width: '35%' }} />
-                  </div>
-                  <small>Bursts occurring at &gt;3.0x above rolling hourly baseline</small>
-                </div>
-
-                <div className="weight-item">
-                  <div className="weight-meta">
-                    <strong>Interval & Timing Anomalies</strong>
-                    <span>25% Weight</span>
-                  </div>
-                  <div className="progress-track">
-                    <div className="progress-bar progress-info" style={{ width: '25%' }} />
-                  </div>
-                  <small>Rapid-fire bursts below 5000ms inter-request interval</small>
-                </div>
-              </div>
-
-              <div className="callout callout-mint" style={{ marginTop: '20px' }}>
-                <strong>Zero-Drift Enforcement Policy</strong>
-                <p>
-                  When composite deviation crosses 50/100, the RASP Runtime Guard automatically flags <code>BEHAVIOURAL_DRIFT</code>, raises a High severity security alert, and throttles access.
-                </p>
-              </div>
             </div>
           </Panel>
 
-          <Panel title="Usage Pattern Taxonomy">
+          <Panel title="Usage pattern taxonomy" eyebrow="Deterministic classification">
             <div className="pattern-guide-list">
               <div className="pattern-guide-item">
-                <span className="badge badge-success">↻ Routine Periodic</span>
-                <p>Regular, expected background queries (e.g. step counters, daily syncs).</p>
+                <StatusBadge tone="success">Routine Periodic</StatusBadge>
+                <p>Regular, predictable background access cadence (e.g., workout telemetry or daily sync).</p>
               </div>
               <div className="pattern-guide-item">
-                <span className="badge badge-neutral">∿ Sporadic Access</span>
-                <p>User-initiated infrequent actions (e.g. profile edit, manual photo picker).</p>
+                <StatusBadge tone="neutral">Sporadic Access</StatusBadge>
+                <p>Infrequent user-initiated requests without high-frequency spikes.</p>
               </div>
               <div className="pattern-guide-item">
-                <span className="badge badge-warning">⚡ Burst Expected</span>
-                <p>Short rapid sequences (e.g. streaming navigation updates, batch uploads).</p>
+                <StatusBadge tone="warning">Burst Expected</StatusBadge>
+                <p>Short rapid sequences expected for active navigation or batch file operations.</p>
               </div>
               <div className="pattern-guide-item">
-                <span className="badge badge-quiet">○ Dormant</span>
-                <p>Ungranted or unused resource capabilities with zero historical activity.</p>
+                <StatusBadge tone="muted">Dormant</StatusBadge>
+                <p>Ungranted or historically unused capability with zero prior baseline activity.</p>
               </div>
             </div>
           </Panel>

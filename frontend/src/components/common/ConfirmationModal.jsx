@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { AlertTriangle, ShieldCheck, X } from 'lucide-react';
 import { APPLICATION_STATUS, RESOURCE_TYPES } from '@shared/contracts.js';
 import AppMark from './AppMark.jsx';
 import LoadingState from './LoadingState.jsx';
@@ -22,8 +23,8 @@ export function ConfirmationModal({ modal, busy, detailApp, detailError, apps, e
       <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}>
         <section className="modal detail-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
           <div className="modal-heading">
-            <div><span className="eyebrow">Security finding · {alert.id}</span><h2 id="modal-title">{modal.title}</h2></div>
-            <button type="button" className="icon-button" aria-label="Close alert details" onClick={onCancel}>×</button>
+            <div><span className="eyebrow">Security signal · {alert.id}</span><h2 id="modal-title">{modal.title}</h2></div>
+            <button type="button" className="icon-button" aria-label="Close alert details" onClick={onCancel}><X size={16} /></button>
           </div>
           <div className="alert-detail-summary">
             <StatusBadge tone={alert.severity}>{humanize(alert.severity)}</StatusBadge>
@@ -61,13 +62,13 @@ export function ConfirmationModal({ modal, busy, detailApp, detailError, apps, e
         <section className="modal detail-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
           <div className="modal-heading">
             <div><span className="eyebrow">Application detail</span><h2 id="modal-title">{modal.title}</h2></div>
-            <button type="button" className="icon-button" aria-label="Close details" onClick={onCancel}>×</button>
+            <button type="button" className="icon-button" aria-label="Close details" onClick={onCancel}><X size={16} /></button>
           </div>
           {detailError ? <ApiUnavailable error={detailError} endpoint="Application detail" /> : !detailApp ? <LoadingState label="Loading application details" /> : (
             <>
               <div className="detail-overview">
                 <AppMark name={detailApp.name} />
-                <div><p>{detailApp.description}</p><StatusBadge tone={detailApp.status === APPLICATION_STATUS.ACTIVE ? 'success' : 'muted'}>{humanize(detailApp.status)}</StatusBadge></div>
+                <div><p>{detailApp.description}</p><StatusBadge tone={detailApp.status === APPLICATION_STATUS.ACTIVE ? 'success' : 'danger'}>{humanize(detailApp.status)}</StatusBadge></div>
                 <TrustRing score={detailApp.trustScore} level={detailApp.trustLevel} size="small" />
               </div>
               <div className="detail-columns">
@@ -95,7 +96,9 @@ export function ConfirmationModal({ modal, busy, detailApp, detailError, apps, e
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onCancel(); }}>
       <section className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <div className={`modal-icon ${modal.danger ? 'modal-icon-danger' : ''}`} aria-hidden="true">{modal.danger ? '!' : '↗'}</div>
+        <div className={`modal-icon ${modal.danger ? 'modal-icon-danger' : ''}`} aria-hidden="true">
+          {modal.danger ? <AlertTriangle size={18} /> : <ShieldCheck size={18} />}
+        </div>
         <h2 id="modal-title">{modal.title}</h2>
         <p>{modal.description}</p>
         <div className="modal-actions">

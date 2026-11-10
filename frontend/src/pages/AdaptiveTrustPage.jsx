@@ -1,14 +1,29 @@
-import { useCallback, useEffect, useState } from 'react';
-import { TRUST_LEVELS } from '@shared/contracts.js';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  CheckCircle2,
+  Gauge,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Zap,
+} from 'lucide-react';
+import { ADAPTIVE_TRUST_CONFIG, TRUST_LEVELS } from '@shared/contracts.js';
 import { api } from '../services/api.js';
+import AppMark from '../components/common/AppMark.jsx';
+import EmptyState from '../components/common/EmptyState.jsx';
+import ErrorState from '../components/common/ErrorState.jsx';
+import LoadingState from '../components/common/LoadingState.jsx';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Panel from '../components/common/Panel.jsx';
+import ProductIllustration from '../components/common/ProductIllustration.jsx';
+import StatCard from '../components/common/StatCard.jsx';
 import StatusBadge from '../components/common/StatusBadge.jsx';
 import TrustRing from '../components/common/TrustRing.jsx';
-import EmptyState from '../components/common/EmptyState.jsx';
-import LoadingState from '../components/common/LoadingState.jsx';
-import ErrorState from '../components/common/ErrorState.jsx';
-import { formatDate } from '../utils/formatters.js';
+import { TrustTrajectoryChart } from '../components/charts/SecurityCharts.jsx';
+import { formatDate, humanize } from '../utils/formatters.js';
 
 const RISK_BADGES = {
   low_risk: { tone: 'success', label: 'Low Risk Profile' },
@@ -25,11 +40,9 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
   const [error, setError] = useState(null);
   const [actionBusy, setActionBusy] = useState(false);
 
-  // Recovery Form State
   const [recoveryPoints, setRecoveryPoints] = useState(5);
   const [recoveryReason, setRecoveryReason] = useState('Administrative compliance verification');
 
-  // Sync selectedAppId when apps populate
   useEffect(() => {
     if (!selectedAppId && apps.length > 0) {
       setSelectedAppId(apps[0].id);
@@ -46,9 +59,9 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
         api.getAdaptiveConfig(),
       ]);
       setProfile(profileData);
-      setConfig(configData);
+      setConfig(configData || {});
     } catch (err) {
-      setError(err.message || 'Failed to load adaptive trust data');
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -57,6 +70,15 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
   useEffect(() => {
     loadData(selectedAppId);
   }, [loadData, selectedAppId]);
+
+  const effectiveConfig = useMemo(() => ({
+    escalationEnabled: Boolean(config?.escalationEnabled),
+    escalationMultiplier: config?.escalationMultiplier ?? ADAPTIVE_TRUST_CONFIG.REPEATED_VIOLATION.ESCALATION_MULTIPLIER,
+    cleanStreakThreshold: config?.cleanStreakThreshold ?? ADAPTIVE_TRUST_CONFIG.RECOVERY.CLEAN_STREAK_THRESHOLD,
+    cleanStreakBonus: config?.cleanStreakBonus ?? ADAPTIVE_TRUST_CONFIG.RECOVERY.CLEAN_STREAK_BONUS,
+    maxRecoveryCeiling: config?.maxRecoveryCeiling ?? ADAPTIVE_TRUST_CONFIG.RECOVERY.MAX_RECOVERY_CEILING,
+    autoRecoveryOnRecommendation: Boolean(config?.autoRecoveryOnRecommendation),
+  }), [config]);
 
   const handleManualRecovery = async (e) => {
     e?.preventDefault();
@@ -68,12 +90,12 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
         reason: recoveryReason,
       });
       onNotify?.(
-        `Successfully recovered ${result.pointsAwarded} points for ${profile?.appName || selectedAppId}!`,
+        `Recovered ${result.pointsAwarded} points for ${profile?.appName || selectedAppId}. New score: ${result.newScore}.`,
         'success',
       );
       await loadData(selectedAppId);
     } catch (err) {
-      onNotify?.(err.message || 'Recovery failed', 'danger');
+      onNotify?.(err.message || 'Recovery failed', 'error');
     } finally {
       setActionBusy(false);
     }
@@ -87,60 +109,63 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
       if (result.streakAwarded) {
         onNotify?.(`Clean streak verified! Awarded bonus points. New score: ${result.newScore}`, 'success');
       } else {
-        onNotify?.(result.message || 'Clean streak threshold not yet met.', 'neutral');
+        onNotify?.(result.message || 'Clean streak threshold not yet met.', 'info');
       }
       await loadData(selectedAppId);
     } catch (err) {
-      onNotify?.(err.message || 'Streak check failed', 'danger');
+      onNotify?.(err.message || 'Streak check failed', 'error');
     } finally {
       setActionBusy(false);
     }
   };
 
   const handleToggleEscalation = async () => {
-    if (!config) return;
     setActionBusy(true);
     try {
       const updated = await api.updateAdaptiveConfig({
-        escalationEnabled: !config.escalationEnabled,
+        escalationEnabled: !effectiveConfig.escalationEnabled,
       });
       setConfig(updated);
       onNotify?.(
-        `Escalation multiplier ${updated.escalationEnabled ? 'Enabled' : 'Disabled'}`,
+        `Escalation multiplier ${updated.escalationEnabled ? 'enabled' : 'disabled'}.`,
         'info',
       );
     } catch (err) {
-      onNotify?.(err.message || 'Config update failed', 'danger');
+      onNotify?.(err.message || 'Adaptive configuration update is not writable in this backend store.', 'error');
     } finally {
       setActionBusy(false);
     }
   };
 
   const risk = RISK_BADGES[profile?.riskCategory] || RISK_BADGES.low_risk;
+  const comparedApps = useMemo(
+    () => apps.slice().sort((a, b) => (a.trustScore ?? 101) - (b.trustScore ?? 101)).slice(0, 8),
+    [apps],
+  );
 
   return (
     <div className="page-stack">
       <PageHeader
-        eyebrow="CLOSED-LOOP BEHAVIORAL GOVERNANCE"
+        eyebrow="Closed-loop behavioral governance"
         title="Adaptive Trust Engine"
-        description="Continuous evaluation algorithm featuring repeated-violation escalation, clean usage streak bonuses, and administrative trust score recovery."
-        actions={
-          <div className="action-row">
+        description="Dynamic evaluation model integrating repeated-violation penalty escalation, clean usage streak rewards, and audit-logged administrative recovery."
+        actions={(
+          <>
             <button
               type="button"
-              className="button button-secondary"
+              className="button"
               onClick={() => loadData(selectedAppId)}
               disabled={loading || actionBusy}
             >
-              ↻ Refresh
+              <RefreshCw size={14} aria-hidden="true" /> Refresh
             </button>
             <button
               type="button"
-              className="button button-secondary"
+              className="button"
               onClick={handleCleanStreakAudit}
               disabled={loading || actionBusy}
             >
-              ⚡ Audit Clean Streak
+              <Zap size={14} aria-hidden="true" /> Audit Clean Streak
             </button>
             <button
               type="button"
@@ -148,48 +173,73 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
               onClick={() => handleManualRecovery()}
               disabled={loading || actionBusy}
             >
-              + Restore Points
+              <Plus size={14} aria-hidden="true" /> Restore Points
             </button>
-          </div>
-        }
+          </>
+        )}
       />
 
-      {/* KPI Overview Grid */}
-      <div className="kpi-grid">
-        <article className="kpi-card kpi-success">
-          <div className="kpi-topline"><span>MAX SCORE CEILING</span><span className="kpi-icon">🎯</span></div>
-          <div className="kpi-value">100<small>pts</small></div>
-          <p>Strict deterministic scoring bounds [0 - 100]</p>
-        </article>
-        <article className="kpi-card kpi-warning">
-          <div className="kpi-topline"><span>ESCALATION MULTIPLIER</span><span className="kpi-icon">📈</span></div>
-          <div className="kpi-value">{config?.escalationMultiplier ?? 1.5}<small>x</small></div>
-          <p>Compound penalty on repeated threat occurrences</p>
-        </article>
-        <article className="kpi-card kpi-info">
-          <div className="kpi-topline"><span>CLEAN STREAK THRESHOLD</span><span className="kpi-icon">🛡️</span></div>
-          <div className="kpi-value">{config?.cleanStreakThreshold ?? 10}<small>calls</small></div>
-          <p>Permitted requests required for automatic streak bonus</p>
-        </article>
-        <article className="kpi-card kpi-neutral">
-          <div className="kpi-topline"><span>STREAK BONUS</span><span className="kpi-icon">✨</span></div>
-          <div className="kpi-value">+{config?.cleanStreakBonus ?? 2}<small>pts</small></div>
-          <p>Progressive recovery awarded per clean evaluation</p>
-        </article>
+      <div className="split-intro-banner">
+        <div className="split-intro-copy">
+          <span className="eyebrow">Continuous Trust Calibration</span>
+          <h2>Escalation &amp; Recovery Mechanics</h2>
+          <p>
+            Every security signal deducts deterministic severity points bounded between 0 and {effectiveConfig.maxRecoveryCeiling}. Repeated alerts within a 5-minute window trigger escalation weighting, while {effectiveConfig.cleanStreakThreshold} consecutive permitted operations or verified remediation credits progressively rebuild trust.
+          </p>
+        </div>
+        <ProductIllustration
+          src="/assets/adaptive-trust-engine.webp"
+          alt="Central circular trust gauge receiving positive green recovery trajectories and negative stepped amber-crimson escalation penalties"
+          variant="compact"
+        />
       </div>
 
-      {/* Main Adaptive Layout */}
+      <div className="kpi-grid kpi-grid-4">
+        <StatCard
+          label="Score ceiling"
+          value={effectiveConfig.maxRecoveryCeiling}
+          suffix="pts"
+          detail="Deterministic score bounds [0–100]"
+          icon={<Target size={15} />}
+          tone="success"
+        />
+        <StatCard
+          label="Escalation multiplier"
+          value={effectiveConfig.escalationMultiplier}
+          suffix="x"
+          detail="Penalty multiplier on repeated violations"
+          icon={<TrendingUp size={15} />}
+          tone="warning"
+        />
+        <StatCard
+          label="Clean streak gate"
+          value={effectiveConfig.cleanStreakThreshold}
+          suffix="calls"
+          detail="Consecutive clean requests for bonus"
+          icon={<ShieldCheck size={15} />}
+          tone="info"
+        />
+        <StatCard
+          label="Streak bonus"
+          value={`+${effectiveConfig.cleanStreakBonus}`}
+          suffix="pts"
+          detail="Awarded per verified clean streak"
+          icon={<Sparkles size={15} />}
+          tone="neutral"
+        />
+      </div>
+
       <div className="dashboard-grid dashboard-grid-main">
-        {/* Left Column: App Profile & Risk Factors */}
         <div className="stack">
           <Panel
-            title="Application Risk Evaluation"
-            action={
-              <div className="select-wrap">
+            title="Application risk evaluation"
+            eyebrow="Backend adaptive trust state"
+            action={(
+              <label className="field inline-select-field">
+                <span>Target Application</span>
                 <select
                   value={selectedAppId}
                   onChange={(e) => setSelectedAppId(e.target.value)}
-                  className="select-field"
                   aria-label="Select Target Application"
                 >
                   {apps.map((app) => (
@@ -198,99 +248,122 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
                     </option>
                   ))}
                 </select>
-              </div>
-            }
+              </label>
+            )}
           >
             {loading ? (
-              <LoadingState message="Computing adaptive trust matrix..." />
+              <LoadingState label="Computing adaptive trust profile" />
             ) : error ? (
-              <ErrorState title="Adaptive Engine Offline" message={error} />
+              <ErrorState title="Adaptive engine unavailable" error={error} />
             ) : !profile ? (
-              <EmptyState title="No Profile Found">Select an application to inspect its adaptive trust factors.</EmptyState>
+              <EmptyState title="No profile found">
+                Select an application to inspect its adaptive trust factors.
+              </EmptyState>
             ) : (
               <div className="adaptive-profile-body">
-                {/* Score & Risk Banner */}
                 <div className={`risk-banner risk-banner-${risk.tone}`}>
                   <div className="risk-banner-content">
-                    <span className="text-overline">ADAPTIVE RISK POSTURE</span>
+                    <span className="eyebrow">Adaptive risk posture</span>
                     <h3>{profile.appName}</h3>
-                    <div className="chip-cluster" style={{ marginTop: '6px' }}>
+                    <div className="chip-cluster">
                       <StatusBadge tone={risk.tone}>{risk.label}</StatusBadge>
                       <StatusBadge tone={profile.level === TRUST_LEVELS.HIGH ? 'success' : 'warning'}>
-                        {profile.level?.toUpperCase()} TRUST
+                        {humanize(profile.level)} Trust
                       </StatusBadge>
                       <StatusBadge tone={profile.status === 'active' ? 'success' : 'danger'}>
-                        {profile.status?.toUpperCase()}
+                        {humanize(profile.status)}
                       </StatusBadge>
                     </div>
                   </div>
                   <div className="score-meter-wrap">
-                    <TrustRing score={profile.currentScore ?? 100} size={88} />
+                    <TrustRing score={profile.currentScore ?? 0} level={profile.level} size="medium" />
                     <span className="score-label">Adaptive Score</span>
                   </div>
                 </div>
 
-                {/* Factors Matrix */}
                 <div className="factors-overview-grid">
                   <div className="factor-box">
-                    <span className="factor-title">Active Threat Alerts</span>
+                    <span className="factor-title">Active threat alerts</span>
                     <span className={`factor-stat ${profile.factors?.activeAlertsCount > 0 ? 'text-danger' : 'text-success'}`}>
                       {profile.factors?.activeAlertsCount ?? 0}
                     </span>
                     <small>Unacknowledged risk signals</small>
                   </div>
                   <div className="factor-box">
-                    <span className="factor-title">Total Lifetime Penalties</span>
+                    <span className="factor-title">Total lifetime penalties</span>
                     <span className="factor-stat text-warning">
                       -{profile.factors?.totalPenalties ?? 0} pts
                     </span>
                     <small>Cumulative behavioral deductions</small>
                   </div>
                   <div className="factor-box">
-                    <span className="factor-title">Recovered Trust</span>
+                    <span className="factor-title">Recovered trust</span>
                     <span className="factor-stat text-success">
                       +{profile.factors?.totalRecovered ?? 0} pts
                     </span>
-                    <small>Corrective & administrative credits</small>
+                    <small>Corrective &amp; administrative credits</small>
                   </div>
                 </div>
 
-                {/* Score Movement Ledger */}
-                <div className="recent-adjustments-section" style={{ marginTop: '24px' }}>
+                <div className="adaptive-trajectory-block">
                   <div className="section-title-row">
-                    <h4>Recent Adaptive Score Adjustments</h4>
-                    <span className="badge badge-neutral">Audit Trail</span>
+                    <h4>Trust score trajectory</h4>
+                    <span className="badge badge-neutral">Persisted History</span>
+                  </div>
+                  <TrustTrajectoryChart records={profile.recentAdjustments || []} />
+                </div>
+
+                <div className="recent-adjustments-section">
+                  <div className="section-title-row">
+                    <h4>Recent adaptive score adjustments</h4>
+                    <span className="badge badge-neutral">Audit Ledger</span>
                   </div>
 
                   {(!profile.recentAdjustments || profile.recentAdjustments.length === 0) ? (
-                    <p className="text-subtle" style={{ margin: '16px 0' }}>No historical score penalties or recoveries recorded yet.</p>
+                    <EmptyState title="No adjustments recorded">
+                      No historical penalties or trust recoveries have been recorded for this app yet.
+                    </EmptyState>
                   ) : (
-                    <div className="table-wrap" style={{ marginTop: '12px' }}>
-                      <table className="data-table">
+                    <div className="table-scroll">
+                      <table>
                         <thead>
                           <tr>
-                            <th>Adjustment</th>
-                            <th>Points</th>
+                            <th>Transition</th>
+                            <th>Delta</th>
                             <th>Trigger Reason</th>
                             <th>Recorded At</th>
                           </tr>
                         </thead>
                         <tbody>
                           {profile.recentAdjustments.map((adj, idx) => {
-                            const isPenalty = Number(adj.penalty) > 0;
+                            const prev = Number.isFinite(adj.previousScore) ? adj.previousScore : null;
+                            const next = Number.isFinite(adj.newScore)
+                              ? adj.newScore
+                              : Number.isFinite(adj.score)
+                                ? adj.score
+                                : null;
+                            const explicitDelta = Number.isFinite(adj.appliedAdjustment)
+                              ? adj.appliedAdjustment
+                              : Number.isFinite(adj.penalty)
+                                ? -adj.penalty
+                                : null;
+                            const delta = explicitDelta !== null
+                              ? explicitDelta
+                              : (prev !== null && next !== null ? next - prev : 0);
+                            const isNegative = delta < 0;
+
                             return (
                               <tr key={adj.id || idx}>
-                                <td>
-                                  <strong>{adj.score}</strong>
-                                  <small className="text-subtle"> ({adj.level})</small>
+                                <td className="mono-num">
+                                  <strong>{prev !== null ? `${prev} → ${next}` : (next ?? '—')}</strong>
                                 </td>
                                 <td>
-                                  <span className={`badge badge-${isPenalty ? 'danger' : 'success'}`}>
-                                    {isPenalty ? `-${adj.penalty}` : `+${adj.appliedAdjustment || 0}`} pts
-                                  </span>
+                                  <StatusBadge tone={isNegative ? 'danger' : delta > 0 ? 'success' : 'neutral'}>
+                                    {delta > 0 ? `+${delta}` : delta} pts
+                                  </StatusBadge>
                                 </td>
                                 <td>{adj.changeReason || adj.reason || 'Telemetry adjustment'}</td>
-                                <td><small>{formatDate(adj.timestamp)}</small></td>
+                                <td><time>{formatDate(adj.timestamp)}</time></td>
                               </tr>
                             );
                           })}
@@ -304,16 +377,15 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
           </Panel>
         </div>
 
-        {/* Right Column: Recovery Console & Engine Settings */}
         <div className="stack">
-          <Panel title="Administrative Recovery Console">
+          <Panel title="Administrative recovery console" eyebrow="Manual trust credit">
             <form onSubmit={handleManualRecovery} className="recovery-form">
-              <p className="text-subtle">
-                Manually credit recovery points to an application following vulnerability remediation, code updates, or administrative verification.
+              <p className="panel-note">
+                Credit recovery points after vulnerability remediation, code updates, or administrative review. Every recovery writes an immutable history entry.
               </p>
 
-              <div className="form-group" style={{ marginTop: '14px' }}>
-                <label className="form-label" htmlFor="recovery-pts">Points to Award (1 - 50)</label>
+              <label className="field" htmlFor="recovery-pts">
+                <span>Points to award (1 – 50)</span>
                 <input
                   id="recovery-pts"
                   type="number"
@@ -321,67 +393,93 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
                   max="50"
                   value={recoveryPoints}
                   onChange={(e) => setRecoveryPoints(e.target.value)}
-                  className="input-field"
                   required
                 />
-              </div>
+              </label>
 
-              <div className="form-group" style={{ marginTop: '14px' }}>
-                <label className="form-label" htmlFor="recovery-reason">Audit Verification Reason</label>
+              <label className="field" htmlFor="recovery-reason">
+                <span>Audit verification reason</span>
                 <input
                   id="recovery-reason"
                   type="text"
                   value={recoveryReason}
                   onChange={(e) => setRecoveryReason(e.target.value)}
-                  className="input-field"
                   placeholder="e.g. Patch validated; security review approved"
                   required
                 />
-              </div>
+              </label>
 
               <button
                 type="submit"
                 className="button button-primary"
-                style={{ marginTop: '16px', width: '100%' }}
+                style={{ width: '100%' }}
                 disabled={actionBusy || loading}
               >
-                {actionBusy ? 'Applying Credit...' : '✓ Award Trust Recovery'}
+                <CheckCircle2 size={15} aria-hidden="true" />
+                {actionBusy ? 'Applying Credit…' : 'Award Trust Recovery'}
               </button>
             </form>
           </Panel>
 
-          <Panel title="Adaptive Engine Policy Parameters">
+          <Panel title="Adaptive engine policy parameters" eyebrow="Runtime behavior rules">
             <div className="config-editor-list">
               <div className="config-row">
                 <div className="config-meta">
                   <strong>Repeated-Violation Escalation</strong>
-                  <small>Multiply penalties by 1.5x when same violation repeats within 5 mins</small>
+                  <small>Applies {effectiveConfig.escalationMultiplier}x multiplier within 5-minute repeat window</small>
                 </div>
                 <button
                   type="button"
-                  className={`button button-${config?.escalationEnabled ? 'primary' : 'secondary'}`}
+                  className={`button button-xs ${effectiveConfig.escalationEnabled ? 'button-primary' : ''}`}
                   onClick={handleToggleEscalation}
                   disabled={actionBusy}
                 >
-                  {config?.escalationEnabled ? 'Enabled' : 'Disabled'}
+                  {effectiveConfig.escalationEnabled ? 'Enabled' : 'Disabled'}
                 </button>
               </div>
 
               <div className="config-row">
                 <div className="config-meta">
-                  <strong>Auto-Recovery on Remediation</strong>
-                  <small>Automatically award +5 points when admin applies recommendation</small>
+                  <strong>Remediation Auto-Recovery</strong>
+                  <small>Configured +{ADAPTIVE_TRUST_CONFIG.RECOVERY.ON_CORRECTIVE_ACTION} pts recovery when corrective policy applied</small>
                 </div>
-                <span className="badge badge-success">ACTIVE</span>
+                <StatusBadge tone={effectiveConfig.autoRecoveryOnRecommendation ? 'success' : 'muted'}>
+                  {effectiveConfig.autoRecoveryOnRecommendation ? 'Active' : 'Standard'}
+                </StatusBadge>
               </div>
 
               <div className="config-row">
                 <div className="config-meta">
                   <strong>Clean Streak Recovery Window</strong>
-                  <small>10 consecutive legitimate calls awards progressive +2 points</small>
+                  <small>{effectiveConfig.cleanStreakThreshold} consecutive permitted calls award +{effectiveConfig.cleanStreakBonus} pts</small>
                 </div>
-                <span className="badge badge-neutral">10 REQUESTS</span>
+                <StatusBadge tone="neutral">{effectiveConfig.cleanStreakThreshold} calls</StatusBadge>
               </div>
+            </div>
+          </Panel>
+
+          <Panel title="Workspace trust comparison" eyebrow="Lowest-scoring apps first">
+            <div className="adaptive-compare-list">
+              {comparedApps.map((app) => (
+                <button
+                  type="button"
+                  key={app.id}
+                  className={`adaptive-compare-row ${app.id === selectedAppId ? 'is-selected' : ''}`}
+                  onClick={() => setSelectedAppId(app.id)}
+                >
+                  <AppMark name={app.name} size="sm" />
+                  <div className="adaptive-compare-copy">
+                    <strong>{app.name}</strong>
+                    <div className="score-track">
+                      <i
+                        className={`trust-fill-${app.trustLevel || 'unknown'}`}
+                        style={{ width: `${app.trustScore ?? 0}%` }}
+                      />
+                    </div>
+                  </div>
+                  <span className="mono-num adaptive-compare-score">{app.trustScore ?? '—'}</span>
+                </button>
+              ))}
             </div>
           </Panel>
         </div>

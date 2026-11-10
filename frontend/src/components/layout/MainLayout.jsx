@@ -4,6 +4,9 @@ import Sidebar from './Sidebar.jsx';
 
 export default function MainLayout({
   page,
+  activePage,
+  activeAlerts,
+  busy,
   navigate,
   mobileNavOpen,
   onToggleNavigation,
@@ -13,10 +16,25 @@ export default function MainLayout({
 }) {
   return (
     <div className="app-shell">
-      <Header onRefresh={onRefresh} />
-      <Sidebar page={page} navigate={navigate} open={mobileNavOpen} onToggle={onToggleNavigation} />
-      <main className="main-content">{children}</main>
-      <Footer navigate={navigate} />
+      <Sidebar
+        page={page}
+        navigate={navigate}
+        open={mobileNavOpen}
+        onToggle={onToggleNavigation}
+        activeAlerts={activeAlerts}
+      />
+      <div className="app-workspace">
+        <Header
+          page={activePage || page}
+          activeAlerts={activeAlerts}
+          busy={busy}
+          navigate={navigate}
+          onToggleNavigation={onToggleNavigation}
+          onRefresh={onRefresh}
+        />
+        <main className="main-content">{children}</main>
+        <Footer navigate={navigate} />
+      </div>
       {overlays}
     </div>
   );
