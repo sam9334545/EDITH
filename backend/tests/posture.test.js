@@ -117,6 +117,15 @@ test('repeated violation findings and incidents preserve unique event relationsh
   assert.equal(incidents.total, 11);
   assert.equal(new Set(incidents.items.map((incident) => incident.eventId)).size, 11);
   assert.ok(incidents.items.every((incident) => incident.simulated && incident.ruleTriggered.length));
+  assert.ok(incidents.items.every((incident) => incident.timeline.every((item, index, timeline) => (
+    index === 0 || new Date(timeline[index - 1].timestamp) <= new Date(item.timestamp)
+  ))));
+  const scoredIncident = incidents.items.find((incident) => incident.trustScoreBefore !== null);
+  assert.ok(scoredIncident);
+  assert.equal(
+    scoredIncident.trustScoreAfter - scoredIncident.trustScoreBefore,
+    scoredIncident.trustScoreChange,
+  );
 });
 
 test('finding acknowledgement updates linked alert and permission remediation resolves findings', async () => {
@@ -229,6 +238,7 @@ test('posture HTTP routes preserve the shared envelope and filter findings', asy
     const invalid = await invalidResponse.json();
     assert.equal(invalidResponse.status, 400);
     assert.equal(invalid.error.code, 'VALIDATION_ERROR');
+
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }

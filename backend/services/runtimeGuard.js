@@ -110,7 +110,7 @@ function inspectBehaviour({ app, resource, timestamp, recentEvents }) {
  * @param {string} p.resource       Requested resource
  * @param {string} [p.timestamp]    ISO timestamp of the request
  * @param {Array}  [p.recentEvents] Events already recorded in the store
- * @param {string} [p.mode]         Overrides the configured mode (used by tests / what-if)
+ * @param {string} [p.mode]         Overrides the configured mode for a single evaluation
  */
 export function evaluate({ app, resource, timestamp, recentEvents = [], mode } = {}) {
   const enforcementMode = Object.values(GUARD_MODES).includes(mode) ? mode : getGuardMode();

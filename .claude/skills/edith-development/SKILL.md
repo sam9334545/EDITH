@@ -35,7 +35,7 @@ If branch is unknown/main/integration: ask which member the developer is, or act
 1. MVP: 7 mandatory features (permissions, monitoring, trust score, suspicious detection, recommendations, access control, history).
 2. Integration + E2E demo scenario (`references/testing-checklist.md`).
 3. **MVP GATE**: all checklist items pass. Stabilize (Part 16 of the master spec: duplicates, score bounds, state consistency, error handling).
-4. Advanced, strictly in order after gate and not after hour 6: Runtime Guard (P1) -> Behavioural DNA -> Adaptive Trust (P1) -> CNAPP-inspired posture (P2) -> Explainability (P2) -> What-if simulator (P2) -> Analytics (P3). Details: `references/advanced-features.md`.
+4. Advanced, strictly in order after gate and not after hour 6: Runtime Guard (P1) -> Behavioural DNA -> Adaptive Trust (P1) -> CNAPP-inspired posture (P2) -> Explainability (P2) -> Analytics (P3). Details: `references/advanced-features.md`.
 
 If a developer asks for an advanced feature while the gate fails: say which items fail, fix those first. If they insist, still refuse to skip; offer to fix the gate.
 

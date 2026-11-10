@@ -942,10 +942,11 @@ export async function getPostureIncidents(query = {}) {
   }
   const events = await Event.find(filter).sort({ timestamp: -1, _id: -1 }).populate('appId', 'id name category permissions expectedPermissions').lean();
   const ids = events.map((event) => event._id);
-  const [alerts, history, trustRows] = await Promise.all([
+  const [alerts, history, trustRows, findings] = await Promise.all([
     Alert.find({ relatedEventIds: { $in: ids } }).sort({ timestamp: -1 }).lean(),
     ActivityHistory.find({ 'metadata.eventId': { $in: ids.map(String) } }).sort({ timestamp: 1 }).lean(),
     TrustHistory.find({}).sort({ timestamp: -1 }).lean(),
+    SecurityFinding.find({ relatedEventIds: { $in: ids } }).lean(),
   ]);
   const alertsByEvent = new Map();
   for (const alert of alerts) {
@@ -962,12 +963,26 @@ export async function getPostureIncidents(query = {}) {
     historyByEvent.get(key).push(item);
   }
   const trustByAlert = new Map(trustRows.filter((item) => item.alertId).map((item) => [textId(item.alertId), item]));
+  const findingsByEvent = new Map();
+  for (const finding of findings) {
+    for (const relatedEventId of finding.relatedEventIds || []) {
+      const key = textId(relatedEventId);
+      if (!findingsByEvent.has(key)) findingsByEvent.set(key, []);
+      findingsByEvent.get(key).push(finding);
+    }
+  }
   let incidents = events.map((event) => {
     const linkedAlerts = alertsByEvent.get(textId(event._id)) || [];
+    const linkedFindings = findingsByEvent.get(textId(event._id)) || [];
     if (severity && !linkedAlerts.some((alert) => alert.severity === severity)) return null;
     if (status && event.status !== status) return null;
     const relatedIds = new Set(linkedAlerts.map((alert) => textId(alert._id)));
-    const scoreImpact = [...relatedIds].reduce((sum, id) => sum + (trustByAlert.get(id)?.penalty || 0), 0);
+    const scoreHistory = [...relatedIds]
+      .map((id) => trustByAlert.get(id))
+      .filter(Boolean)
+      .sort((left, right) => new Date(left.timestamp) - new Date(right.timestamp));
+    const scoreImpact = scoreHistory.reduce((sum, row) => sum + (row.penalty || 0), 0);
+    const scoreChange = scoreHistory.reduce((sum, row) => sum + row.change, 0);
     const permissionEnabled = event.appId.permissions?.[event.resource]?.enabled === true;
     const expected = event.appId.expectedPermissions || [];
     const explanation = event.status === ACCESS_STATUS.DENIED
@@ -992,6 +1007,19 @@ export async function getPostureIncidents(query = {}) {
         Object.values(ALERT_SEVERITY).indexOf(b) - Object.values(ALERT_SEVERITY).indexOf(a)
       ))[0] || (event.status === ACCESS_STATUS.DENIED ? ALERT_SEVERITY.MEDIUM : ALERT_SEVERITY.LOW),
       trustScoreImpact: scoreImpact,
+      trustScoreBefore: scoreHistory.length ? scoreHistory[0].previousScore : null,
+      trustScoreChange: scoreHistory.length ? scoreChange : null,
+      trustScoreAfter: scoreHistory.length ? scoreHistory.at(-1).newScore : null,
+      status: linkedFindings[0]?.status || null,
+      findings: linkedFindings.map((finding) => ({
+        id: textId(finding._id),
+        title: finding.title,
+        ruleId: finding.ruleId,
+        reason: finding.reason,
+        status: finding.status,
+        recommendedAction: finding.recommendedAction,
+        history: finding.history || [],
+      })),
       nextAction: linkedAlerts.length
         ? 'Review the linked alert and its recommended action.'
         : event.status === ACCESS_STATUS.DENIED
@@ -1016,6 +1044,11 @@ export async function getPostureIncidents(query = {}) {
           timestamp: alert.timestamp,
           description: alert.message,
         })),
+        ...linkedFindings.flatMap((finding) => (finding.history || []).map((item) => ({
+          type: `finding_${item.status}`,
+          timestamp: item.timestamp,
+          description: item.note,
+        }))),
       ].sort((left, right) => new Date(left.timestamp) - new Date(right.timestamp)),
     };
   }).filter(Boolean);

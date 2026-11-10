@@ -103,8 +103,8 @@ Posture endpoints use persisted application, permission, event, alert, and trust
 - `GET /api/posture/policies` lists rules. `PATCH /api/posture/policies/:ruleId` accepts one or more of `{enabled,threshold,weight,severity,recommendedAction}`.
 - All endpoints retain the standard response envelope. IDs link back to the existing application/event/alert records.
 - `npm run seed` idempotently adds 15 explicitly fictional demo apps, historical simulated events, policies, alerts, trust history, and activity history. Demo reset removes only records explicitly marked as demo and remains disabled outside development with `ALLOW_DEMO_RESET=true`.
-- Posture risk starts from the existing trust score. Alert-linked events are already represented in that score and are not penalized again; additional event penalties use unique, unlinked event IDs.
+- Posture risk starts from the existing trust score. Alert-linked events are already represented in that score and are not penalized again; additional event penalties use unique, unlinked event IDs. Incident details expose trust-score before/change/after values only when persisted trust-history rows establish them; otherwise the values are `null`.
 - The project remains a single-user simulated demo. No authentication or user/role model is currently provided.
 
 ## Advanced (add ONLY after MVP gate; extend, never break)
-`GET/PATCH /api/guard/mode` `{mode: monitor|protect|strict}`, `GET /api/guard/decisions`, `GET /api/security/posture`, `POST /api/simulator/what-if` (read-only). Define their schemas in contracts.js when built.
+`GET/PATCH /api/guard/mode` `{mode: monitor|protect|strict}`, `GET /api/guard/decisions`, `GET /api/security/posture`. Define their schemas in contracts.js when built.
