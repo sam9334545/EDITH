@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { store } from '../store/index.js';
 import { simulateEvents } from '../routes/events.js';
 import { applyRecommendation } from '../services/permissionService.js';
+import { setGuardMode } from '../services/runtimeGuard.js';
 
 function createMockReqRes({ body = {} } = {}) {
   let statusCode = 200;
@@ -28,6 +29,7 @@ function createMockReqRes({ body = {} } = {}) {
 describe('E2E Demo Scenario (references/testing-checklist.md)', () => {
   beforeEach(() => {
     store.resetToSeed();
+    setGuardMode('monitor'); // demo scenario: rate limit is alert-only
   });
 
   test('runs complete 7-step scenario matching exact scores (94 -> 79 -> 71 -> 63)', async () => {
@@ -139,4 +141,3 @@ describe('E2E Demo Scenario (references/testing-checklist.md)', () => {
     assert.equal(appAlerts.length, 3);
   });
 });
-

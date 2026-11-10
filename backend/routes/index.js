@@ -6,6 +6,7 @@ import eventsRouter from './events.js';
 import recommendationsRouter from './recommendations.js';
 import historyRouter from './history.js';
 import securityRouter from './security.js';
+import guardRouter from './guard.js';
 
 const router = Router();
 
@@ -70,6 +71,9 @@ router.use('/events', eventsRouter);
 
 // Mount M3 History router
 router.use('/history', historyRouter);
+
+// Mount Runtime Guard (mode + decision log)
+router.use('/guard', guardRouter);
 
 // Mount M4 Security & Recommendations routers
 router.use('/security/recommendations', recommendationsRouter);

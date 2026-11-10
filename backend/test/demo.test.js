@@ -5,10 +5,12 @@ import accessPipeline from '../services/accessPipeline.js';
 import recommendationService from '../services/recommendationService.js';
 import historyService from '../services/historyService.js';
 import { ACTIVITY_EVENT_TYPES } from '../../shared/contracts.js';
+import { setGuardMode } from '../services/runtimeGuard.js';
 
 describe('E2E Demo Scenario & Activity History Audit Trail', () => {
   it('Executes the 7-step scenario and validates exact scores and activity history audit trail', () => {
     store.resetToSeed();
+    setGuardMode('monitor'); // demo scenario: rate limit is alert-only (25 location requests allowed, alert at #11)
     const T = Date.parse('2026-11-09T10:00:00.000Z');
 
     // Step 1: location x3 at T

@@ -1,6 +1,11 @@
 // M1 In-Memory Store for E.D.I.T.H.
 import seedData from '../data/seedData.js';
-import { trustLevelFor } from '../../shared/contracts.js';
+import { trustLevelFor, GUARD_MODES, DEFAULT_GUARD_MODE } from '../../shared/contracts.js';
+
+function initialGuardMode() {
+  const env = process.env.RUNTIME_GUARD_MODE;
+  return Object.values(GUARD_MODES).includes(env) ? env : DEFAULT_GUARD_MODE;
+}
 
 class DataStore {
   constructor() {
@@ -17,6 +22,8 @@ class DataStore {
     this.history = JSON.parse(JSON.stringify(seed.history));
     this.trustHistory = JSON.parse(JSON.stringify(seed.trustHistory));
     this.counters = JSON.parse(JSON.stringify(seed.counters));
+    this.guardMode = initialGuardMode();
+    this.guardDecisions = [];
     this._mockClock = null;
     return this.getState();
   }
@@ -200,6 +207,31 @@ class DataStore {
     const updated = updater({ ...current });
     this.recommendations[idx] = updated;
     return updated;
+  }
+
+  getGuardMode() {
+    return this.guardMode;
+  }
+
+  setGuardMode(mode) {
+    if (!Object.values(GUARD_MODES).includes(mode)) return null;
+    const previousMode = this.guardMode;
+    this.guardMode = mode;
+    return { mode, previousMode, updatedAt: this.clock.now() };
+  }
+
+  addGuardDecision(decision) {
+    const entry = { ...decision, decisionId: decision.decisionId || this.nextId('gd') };
+    this.guardDecisions.push(entry);
+    return entry;
+  }
+
+  getGuardDecisions(filter = {}) {
+    let list = [...this.guardDecisions].reverse(); // newest first
+    if (filter.appId) list = list.filter((d) => d.appId === filter.appId);
+    if (filter.decision) list = list.filter((d) => d.decision === filter.decision);
+    if (filter.limit) list = list.slice(0, filter.limit);
+    return list;
   }
 
   addTrustHistory(th) {

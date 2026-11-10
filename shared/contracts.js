@@ -33,6 +33,23 @@ export const ACTIVITY_EVENT_TYPES = Object.freeze({
   RECOMMENDATION_APPLIED: 'recommendation_applied',
 });
 export const TRUST_LEVELS = Object.freeze({ HIGH: 'high', MODERATE: 'moderate', LOW: 'low', CRITICAL: 'critical' });
+// ---- Runtime Guard (RASP-inspired, simulated; does not monitor system calls) ----
+export const GUARD_MODES = Object.freeze({ MONITOR: 'monitor', PROTECT: 'protect', STRICT: 'strict' });
+export const DEFAULT_GUARD_MODE = GUARD_MODES.STRICT; // strict keeps the MVP rule "suspended apps are always denied"
+export const GUARD_DECISIONS = Object.freeze({ ALLOW: 'ALLOW', BLOCK: 'BLOCK' });
+export const RUNTIME_POLICIES = Object.freeze({
+  PERMISSION_REVOKED: 'PERMISSION_REVOKED',               // mandatory, every mode
+  APP_SUSPENDED: 'APP_SUSPENDED',                         // enforced in strict only
+  LOCATION_RATE_LIMIT: 'LOCATION_RATE_LIMIT',             // enforced in protect + strict
+  SENSITIVE_COMBINATION_BURST: 'SENSITIVE_COMBINATION_BURST', // high severity, enforced in strict only
+});
+// Additive denialReason values written by the guard (existing: permission_disabled, app_suspended).
+export const GUARD_DENIAL_REASONS = Object.freeze({ RATE_LIMIT_EXCEEDED: 'rate_limit_exceeded', POLICY_VIOLATION: 'policy_violation' });
+export const GUARD_CONFIG = Object.freeze({
+  LOCATION_RATE_LIMIT: { resource: 'location', maxRequests: 10, windowMs: 60000, severity: 'high' },
+  SENSITIVE_COMBINATION_BURST: { distinctSensitive: 3, windowMs: 30000, severity: 'high' },
+});
+
 export const ERROR_CODES = Object.freeze([
   'VALIDATION_ERROR', 'APP_NOT_FOUND', 'RESOURCE_INVALID', 'RECOMMENDATION_NOT_FOUND', 'INTERNAL_ERROR', 'RASP_VIOLATION',
 ]);
@@ -73,6 +90,10 @@ export function validatePermissionPatch(p) {
 }
 export function validateStatusPatch(p) {
   if (!p || !Object.values(APPLICATION_STATUS).includes(p.status)) return `status must be one of ${Object.values(APPLICATION_STATUS).join(', ')}`;
+  return null;
+}
+export function validateGuardModePatch(p) {
+  if (!p || !Object.values(GUARD_MODES).includes(p.mode)) return `mode must be one of ${Object.values(GUARD_MODES).join(', ')}`;
   return null;
 }
 export { iso as isIsoTimestamp };

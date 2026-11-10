@@ -8,7 +8,8 @@ import {
   trustLevelFor,
 } from '../../shared/contracts.js';
 import { store } from '../store/index.js';
-import { checkPermission, formatApp } from './permissionService.js';
+import { formatApp } from './permissionService.js';
+import { evaluate as evaluateGuard, recordDecision } from './runtimeGuard.js';
 import { createEvent } from './eventService.js';
 import { analyzeEvent } from './anomalyDetection.js';
 import { calculateTrustScore } from './trustScore.js';
@@ -35,8 +36,16 @@ export function processAccessRequest(payload) {
     throw error;
   }
 
-  // 3 & 4. Status check & permission check
-  const decision = checkPermission(app, payload.resource);
+  // 3. Runtime Guard (RASP-inspired): app -> status -> permission -> behavioural inspection ->
+  //    policy evaluation -> ALLOW | BLOCK. Every request passes through here and is logged below.
+  const priorEvents = store?.events || (typeof store?.getState === 'function' ? store.getState().events : []) || [];
+  const guardResult = evaluateGuard({
+    app,
+    resource: payload.resource,
+    timestamp: payload.timestamp || (store?.clock?.now ? store.clock.now() : new Date().toISOString()),
+    recentEvents: priorEvents,
+  });
+  const decision = { allowed: guardResult.allowed, reason: guardResult.reason };
   const isAllowed = decision.allowed;
   const denialReason = isAllowed ? null : decision.reason;
 
@@ -48,6 +57,9 @@ export function processAccessRequest(payload) {
     timestamp: payload.timestamp,
     decision,
   });
+
+  // 3b. Log the guard decision (decision log + event + access history metadata)
+  const guardDecision = recordDecision({ result: guardResult, app, event });
 
   // If allowed, update lastAccessedAt
   if (isAllowed && app.permissions?.[payload.resource]) {
@@ -219,6 +231,7 @@ export function processAccessRequest(payload) {
     recommendations: newRecommendations,
     allowed: isAllowed,
     denialReason: denialReason,
+    guard: guardDecision,
   };
 }
 
