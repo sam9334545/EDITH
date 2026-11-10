@@ -12,6 +12,7 @@ import Panel from '../components/common/Panel.jsx';
 import StatusBadge from '../components/common/StatusBadge.jsx';
 import TrustRing from '../components/common/TrustRing.jsx';
 import PermissionGrid from '../components/security/PermissionGrid.jsx';
+import { Explainer } from '../components/common/Illustration.jsx';
 import {
   ALERT_LABELS, EVENT_LABELS, RESOURCE_LABELS, AlertRows, ApiUnavailable, Button, ErrorBlock,
   Icon, Pagination, SelectField, TextField, activityTone, appName, formatDate, humanize,
@@ -49,6 +50,20 @@ export function SecurityPage({ apps, alerts, events, errors, onAcknowledge, onVi
         <div><span>Rule coverage</span><strong>5</strong><small>R1–R5</small></div>
         <p>Alerts are produced by the backend security engine. This page never fabricates sample findings.</p>
       </div>
+      <Panel title="Runtime request inspection" eyebrow="How a request is judged">
+        <Explainer
+          name="rasp-threat-detection"
+          alt="Two incoming requests entering an inspection layer: the clean request is permitted and the malicious one is blocked, raising a security alert."
+          title="Every request passes through the guard"
+        >
+          <ul className="explainer-list">
+            <li><strong>Inspect.</strong> Each simulated access request is checked against the application&apos;s status, its granted permissions, and the active runtime policies.</li>
+            <li><strong>Decide.</strong> The backend alone allows or denies. A denial always carries a reason, and both outcomes are recorded as events.</li>
+            <li><strong>Raise.</strong> Behaviour matching a detection rule becomes an alert with a severity, deduplicated so one incident is not counted twice.</li>
+            <li><strong>Attribute.</strong> Alerts feed the trust score and the recommendation engine, giving every deduction a traceable cause.</li>
+          </ul>
+        </Explainer>
+      </Panel>
       <Panel title="Alert register" eyebrow={`${filtered.length} alerts`}>
         {queryError ? <ErrorBlock error={queryError} endpoint="Security alerts" /> : (
           <>

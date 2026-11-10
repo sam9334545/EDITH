@@ -6,6 +6,7 @@ import PageHeader from '../components/common/PageHeader.jsx';
 import StatusBadge from '../components/common/StatusBadge.jsx';
 import TrustRing from '../components/common/TrustRing.jsx';
 import { formatDate, humanize } from '../utils/formatters.js';
+import Illustration from '../components/common/Illustration.jsx';
 
 function Field({ label, value, onChange, options, placeholder }) {
   return (
@@ -28,6 +29,21 @@ export default function Applications({ apps, events, errors, onStatusChange, onV
   return (
     <>
       <PageHeader eyebrow="Application registry" title="Applications" description="Review the apps in your environment and understand their access posture." />
+      <section className="registry-banner" aria-label="How applications reach protected resources">
+        <div className="registry-banner-copy">
+          <h4>Applications never reach a resource directly</h4>
+          <p>
+            Every request passes through the governance layer, which checks the application&apos;s status
+            and its granted permissions before allowing or denying access. Suspended applications are
+            blocked outright, whatever their individual permission flags say.
+          </p>
+        </div>
+        <Illustration
+          name="application-ecosystem"
+          alt="Applications on the left connected through a central governance layer to protected resources on the right, with one link monitored and one restricted."
+          className="registry-banner-art"
+        />
+      </section>
       <div className="toolbar">
         <Field label="Search applications" value={search} onChange={setSearch} placeholder="Name or description" />
         <Field label="Status" value={status} onChange={setStatus} options={[

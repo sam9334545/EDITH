@@ -3,8 +3,9 @@ import { ACCESS_STATUS, APPLICATION_STATUS } from '@shared/contracts.js';
 import EmptyState from '../components/common/EmptyState.jsx';
 import ErrorState from '../components/common/ErrorState.jsx';
 import Panel from '../components/common/Panel.jsx';
-import PageHeader from '../components/common/PageHeader.jsx';
 import StatusBadge from '../components/common/StatusBadge.jsx';
+import Illustration from '../components/common/Illustration.jsx';
+import { LayersIcon, DnaIcon, GaugeIcon } from '../components/common/Icons.jsx';
 import { formatDate, humanize } from '../utils/formatters.js';
 
 const ALERT_LABELS = {
@@ -29,9 +30,21 @@ function DashboardStat({ label, value, suffix = '', detail, icon, tone = 'neutra
   );
 }
 
+/**
+ * Allowed vs denied access requests per day.
+ *
+ * The window is anchored to the newest recorded event rather than "today", so a
+ * deterministic seed (whose events sit in the past) still renders a readable series
+ * instead of one lonely bar against six empty days.
+ */
 function EventBars({ events }) {
   const points = useMemo(() => {
-    const end = new Date();
+    if (!events.length) return [];
+    const newest = events.reduce(
+      (max, item) => Math.max(max, new Date(item.timestamp).getTime()),
+      0,
+    );
+    const end = new Date(newest);
     end.setHours(0, 0, 0, 0);
     const days = Array.from({ length: 7 }, (_, index) => {
       const date = new Date(end);
@@ -47,9 +60,20 @@ function EventBars({ events }) {
     const max = Math.max(1, ...days.map((day) => day.allowed + day.denied));
     return days.map((day) => ({ ...day, height: (day.allowed + day.denied) / max }));
   }, [events]);
+
+  if (!points.length) {
+    return <div className="chart-empty">No access events recorded yet. Run the demo scenario or simulate a request to populate this chart.</div>;
+  }
+
+  const totalAllowed = points.reduce((sum, point) => sum + point.allowed, 0);
+  const totalDenied = points.reduce((sum, point) => sum + point.denied, 0);
   return (
-    <div className="bar-chart" aria-label="Allowed and denied requests in the last seven days">
-      <div className="chart-legend"><span><i className="legend-allowed" />Allowed</span><span><i className="legend-denied" />Denied</span><small>Based on the latest 200 events returned by the API</small></div>
+    <div className="bar-chart" aria-label={`Access requests over seven days: ${totalAllowed} allowed, ${totalDenied} denied`}>
+      <div className="chart-legend">
+        <span><i className="legend-allowed" />Allowed</span>
+        <span><i className="legend-denied" />Denied</span>
+        <small>Seven days ending at the most recent recorded event</small>
+      </div>
       <div className="bar-chart-grid">
         {points.map((point) => {
           const total = point.allowed + point.denied;
@@ -57,10 +81,15 @@ function EventBars({ events }) {
           const deniedHeight = total ? (point.denied / total) * point.height * 100 : 0;
           return (
             <div className="bar-column" key={point.label}>
-              <div className="bar-track">{total > 0 && <div className="bar-stack" style={{ height: `${point.height * 100}%` }}>
-                <i className="bar-allowed" style={{ height: `${allowedHeight}%` }} />
-                <i className="bar-denied" style={{ height: `${deniedHeight}%` }} />
-              </div>}</div><span>{point.label}</span>
+              <div className="bar-track" title={`${point.label}: ${point.allowed} allowed, ${point.denied} denied`}>
+                {total > 0 && (
+                  <div className="bar-stack" style={{ height: `${Math.max(point.height * 100, 6)}%` }}>
+                    <i className="bar-allowed" style={{ height: `${allowedHeight}%` }} />
+                    <i className="bar-denied" style={{ height: `${deniedHeight}%` }} />
+                  </div>
+                )}
+              </div>
+              <span>{point.label}</span>
             </div>
           );
         })}
@@ -112,12 +141,49 @@ export default function Dashboard({
   const appsList = apps.slice().sort((left, right) => (right.trustScore ?? -1) - (left.trustScore ?? -1));
   return (
     <>
-      <PageHeader
-        eyebrow={`Workspace Environment · ${new Intl.DateTimeFormat(undefined, { dateStyle: 'full' }).format(new Date())}`}
-        title="Autonomous Digital Trust & Heuristic Security."
-        description="Centralized permission governance, real-time access telemetry, and behavioral anomaly detection for modern applications."
-        actions={<><button className="button" type="button" onClick={onReset} disabled={Boolean(busyAction)}>Reset demo</button><button className="button button-primary" type="button" onClick={onRunDemo} disabled={Boolean(busyAction)}>{busyAction === 'demo' ? 'Running scenario…' : 'Run demo scenario'} ↗</button></>}
-      />
+      <section className="hero-panel" aria-label="Platform overview">
+        <div className="hero-copy">
+          <p className="hero-eyebrow">Enhanced Digital Identity, Trust &amp; Heuristics</p>
+          <h1 className="hero-title">
+            Continuous application trust, <em>not</em> one-time permissions.
+          </h1>
+          <p className="hero-lede">
+            E.D.I.T.H. governs what every application may reach, records each access request,
+            profiles behaviour against the application&apos;s own baseline, and re-scores trust as
+            evidence changes — inside a fully simulated environment.
+          </p>
+          <div className="hero-actions">
+            <button className="button button-primary" type="button" onClick={onRunDemo} disabled={Boolean(busyAction)}>
+              {busyAction === 'demo' ? 'Running scenario…' : 'Run demo scenario'} ↗
+            </button>
+            <button className="button" type="button" onClick={onReset} disabled={Boolean(busyAction)}>Reset demo</button>
+          </div>
+          <div className="hero-meta">
+            <div className="hero-meta-item">
+              <strong>{errors.apps ? '—' : totalApps}</strong>
+              <span>Applications governed</span>
+            </div>
+            <div className="hero-meta-item">
+              <strong>{errors.apps || averageTrust === null ? '—' : `${averageTrust}/100`}</strong>
+              <span>Average trust</span>
+            </div>
+            <div className="hero-meta-item">
+              <strong>{errors.alerts ? '—' : activeAlerts}</strong>
+              <span>Open alerts</span>
+            </div>
+            <div className="hero-meta-item">
+              <strong>5</strong>
+              <span>Protected resources</span>
+            </div>
+          </div>
+        </div>
+        <div className="hero-figure">
+          <Illustration
+            name="edith-security-hero"
+            alt="Applications and connected devices linked to a central E.D.I.T.H. security shield, with permission links marked as trusted, monitored or restricted."
+          />
+        </div>
+      </section>
       <section className="kpi-grid" aria-label="Environment summary">
         <DashboardStat label="Applications" value={errors.apps ? '—' : totalApps} detail="Registered in workspace" icon="▦" />
         <DashboardStat label="Allowed requests" value={errors.events ? '—' : allowed} detail={stats ? 'All recorded requests' : 'Across the latest 200 events'} icon="✓" tone="success" />
@@ -128,8 +194,9 @@ export default function Dashboard({
 
       {/* Advanced Security & AI Engines Showcase */}
       <section className="engine-showcase-grid" aria-label="Integrated Security Engines">
-        <div className="engine-card" onClick={() => onNavigate('posture')} role="button" tabIndex={0}>
-          <span className="engine-card-icon" aria-hidden="true">◈</span>
+        <div className="engine-card" onClick={() => onNavigate('posture')} role="button" tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate('posture'); } }}>
+          <span className="engine-card-icon"><LayersIcon /></span>
           <div className="engine-card-content">
             <h4>CNAPP & Security Posture</h4>
             <p>Cloud-native application protection with risk scoring, compliance drift, and security findings.</p>
@@ -137,8 +204,9 @@ export default function Dashboard({
           </div>
         </div>
 
-        <div className="engine-card" onClick={() => onNavigate('dna')} role="button" tabIndex={0}>
-          <span className="engine-card-icon" aria-hidden="true">🧬</span>
+        <div className="engine-card" onClick={() => onNavigate('dna')} role="button" tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate('dna'); } }}>
+          <span className="engine-card-icon"><DnaIcon /></span>
           <div className="engine-card-content">
             <h4>Behavioral DNA Engine</h4>
             <p>Heuristic telemetry profiling, rolling access baselines, and runtime drift detection.</p>
@@ -146,8 +214,9 @@ export default function Dashboard({
           </div>
         </div>
 
-        <div className="engine-card" onClick={() => onNavigate('adaptive')} role="button" tabIndex={0}>
-          <span className="engine-card-icon" aria-hidden="true">⚡</span>
+        <div className="engine-card" onClick={() => onNavigate('adaptive')} role="button" tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate('adaptive'); } }}>
+          <span className="engine-card-icon"><GaugeIcon /></span>
           <div className="engine-card-content">
             <h4>Adaptive Trust Engine</h4>
             <p>Closed-loop risk weighting, repeated-violation escalation, and clean streak trust credits.</p>

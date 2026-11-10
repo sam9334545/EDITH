@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" fill="none" role="img">
+  <title>Continuous trust evaluation with recovery and escalation</title>
+  <defs>
+    <linearGradient id="t-ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5aa688"/><stop offset="1" stop-color="#1a4d3a"/>
+    </linearGradient>
+    <filter id="t-soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#15402f" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <rect width="1000" height="620" rx="28" fill="#f7fbf9"/>
+
+  <!-- central trust ring -->
+  <g transform="translate(300 310)">
+    <circle r="124" fill="#ffffff" filter="url(#t-soft)"/>
+    <circle r="104" fill="none" stroke="#e2f1e9" stroke-width="26"/>
+    <!-- arc ~72% -->
+    <circle r="104" fill="none" stroke="url(#t-ring)" stroke-width="26" stroke-linecap="round"
+            stroke-dasharray="470 654" transform="rotate(-90)"/>
+    <circle r="66" fill="#f0f9f5"/>
+    <!-- inner bars standing in for the score readout (no text) -->
+    <rect x="-34" y="-12" width="68" height="14" rx="7" fill="#2f6d56"/>
+    <rect x="-22" y="10" width="44" height="9" rx="4.5" fill="#a8d5c2"/>
+  </g>
+
+  <!-- positive signals feeding in (top-left) -->
+  <g stroke="#3d8b6e" stroke-width="3" fill="none" stroke-linecap="round">
+    <path d="M96 150 C 170 168, 214 206, 236 236"/>
+    <path d="M70 262 C 140 262, 176 272, 198 284"/>
+  </g>
+  <g filter="url(#t-soft)">
+    <rect x="30" y="118" width="86" height="46" rx="23" fill="#ffffff" stroke="#a8d5c2" stroke-width="2"/>
+    <path d="M58 141 h30 M73 126 v30" stroke="#3d8b6e" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <g filter="url(#t-soft)">
+    <rect x="18" y="238" width="86" height="46" rx="23" fill="#ffffff" stroke="#a8d5c2" stroke-width="2"/>
+    <path d="M46 261 h30 M61 246 v30" stroke="#3d8b6e" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <!-- negative signals feeding in (bottom-left) -->
+  <g stroke="#dc2626" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.85">
+    <path d="M96 470 C 170 452, 214 414, 236 384"/>
+  </g>
+  <g filter="url(#t-soft)">
+    <rect x="30" y="448" width="86" height="46" rx="23" fill="#ffffff" stroke="#f2c6c6" stroke-width="2"/>
+    <path d="M58 471 h30" stroke="#dc2626" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <!-- trajectory panel -->
+  <g stroke="#c4e0d2" stroke-width="2">
+    <path d="M540 480 H944"/><path d="M540 140 V480"/>
+  </g>
+  <g stroke="#dcefe5" stroke-width="1.5">
+    <path d="M540 225 H944"/><path d="M540 310 H944"/><path d="M540 395 H944"/>
+  </g>
+
+  <!-- escalation trajectory (repeated violations) -->
+  <path d="M540 238 L612 268 L684 302 L756 356 L828 404 L900 446"
+        stroke="#dc2626" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <g fill="#dc2626">
+    <circle cx="684" cy="302" r="6"/><circle cx="828" cy="404" r="6"/>
+  </g>
+  <circle cx="900" cy="446" r="11" fill="#ffffff" stroke="#dc2626" stroke-width="5"/>
+
+  <!-- recovery trajectory (clean streak) -->
+  <path d="M540 400 L612 388 L684 362 L756 318 L828 268 L900 212"
+        stroke="#3d8b6e" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <g fill="#3d8b6e">
+    <circle cx="684" cy="362" r="6"/><circle cx="828" cy="268" r="6"/>
+  </g>
+  <circle cx="900" cy="212" r="11" fill="#ffffff" stroke="#3d8b6e" stroke-width="5"/>
+
+  <!-- score ceiling marker -->
+  <path d="M540 176 H944" stroke="#5aa688" stroke-width="2.5" stroke-dasharray="7 9"/>
+</svg>

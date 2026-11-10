@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" fill="none" role="img">
+  <title>Behavioural baseline profiling and drift detection</title>
+  <defs>
+    <linearGradient id="d-band" x1="0" y1="250" x2="0" y2="430" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7ebda3" stop-opacity="0.26"/><stop offset="1" stop-color="#7ebda3" stop-opacity="0.10"/>
+    </linearGradient>
+    <linearGradient id="d-node" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3d8b6e"/><stop offset="1" stop-color="#1a4d3a"/>
+    </linearGradient>
+    <filter id="d-soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#15402f" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <rect width="1000" height="620" rx="28" fill="#f7fbf9"/>
+
+  <!-- application node + telemetry signals -->
+  <g filter="url(#d-soft)">
+    <rect x="52" y="236" width="150" height="150" rx="34" fill="url(#d-node)"/>
+    <rect x="86" y="270" width="82" height="82" rx="20" fill="#ffffff" opacity="0.92"/>
+    <circle cx="127" cy="311" r="19" fill="#2f6d56"/>
+  </g>
+  <!-- telemetry emission arcs -->
+  <g stroke="#5aa688" fill="none" stroke-linecap="round" opacity="0.85">
+    <path d="M214 282 C 244 290, 252 300, 252 311" stroke-width="3"/>
+    <path d="M214 311 h40" stroke-width="3"/>
+    <path d="M214 340 C 244 332, 252 322, 252 311" stroke-width="3"/>
+  </g>
+  <g fill="#3d8b6e">
+    <circle cx="262" cy="282" r="5"/><circle cx="262" cy="311" r="5"/><circle cx="262" cy="340" r="5"/>
+  </g>
+
+  <!-- detection boundary (baseline band) -->
+  <path d="M300 270 H930 V404 H300 Z" fill="url(#d-band)"/>
+  <g stroke="#5aa688" stroke-dasharray="6 8" stroke-width="2.5" opacity="0.95">
+    <path d="M300 270 H930"/><path d="M300 404 H930"/>
+  </g>
+
+  <!-- axis -->
+  <g stroke="#c4e0d2" stroke-width="2">
+    <path d="M300 500 H930"/><path d="M300 180 V500"/>
+  </g>
+  <g stroke="#dcefe5" stroke-width="1.5">
+    <path d="M300 230 H930"/><path d="M300 337 H930"/><path d="M300 450 H930"/>
+  </g>
+
+  <!-- stable baseline trace -->
+  <path d="M300 352 L352 330 L404 344 L456 324 L508 348 L560 330 L612 346 L664 328 L716 342"
+        stroke="#2f6d56" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <g fill="#2f6d56">
+    <circle cx="352" cy="330" r="6"/><circle cx="456" cy="324" r="6"/><circle cx="560" cy="330" r="6"/><circle cx="664" cy="328" r="6"/>
+  </g>
+
+  <!-- deviation spike breaking the boundary -->
+  <path d="M716 342 L768 320 L812 214 L856 268 L900 246"
+        stroke="#d97706" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="812" cy="214" r="13" fill="#ffffff" stroke="#dc2626" stroke-width="5"/>
+  <circle cx="812" cy="214" r="4" fill="#dc2626"/>
+  <!-- anomaly halo -->
+  <circle cx="812" cy="214" r="34" fill="none" stroke="#dc2626" stroke-opacity="0.35" stroke-width="2.5"/>
+  <circle cx="812" cy="214" r="50" fill="none" stroke="#dc2626" stroke-opacity="0.16" stroke-width="2.5"/>
+
+  <!-- legend chips (no text, color-coded) -->
+  <g filter="url(#d-soft)">
+    <rect x="300" y="534" width="150" height="40" rx="20" fill="#ffffff" stroke="#c4e0d2" stroke-width="2"/>
+    <rect x="320" y="551" width="34" height="6" rx="3" fill="#2f6d56"/>
+    <rect x="364" y="549" width="66" height="10" rx="5" fill="#dcefe5"/>
+  </g>
+  <g filter="url(#d-soft)">
+    <rect x="466" y="534" width="150" height="40" rx="20" fill="#ffffff" stroke="#c4e0d2" stroke-width="2"/>
+    <rect x="486" y="551" width="34" height="6" rx="3" fill="#d97706"/>
+    <rect x="530" y="549" width="66" height="10" rx="5" fill="#dcefe5"/>
+  </g>
+  <g filter="url(#d-soft)">
+    <rect x="632" y="534" width="150" height="40" rx="20" fill="#ffffff" stroke="#c4e0d2" stroke-width="2"/>
+    <circle cx="654" cy="554" r="8" fill="#dc2626"/>
+    <rect x="672" y="549" width="90" height="10" rx="5" fill="#dcefe5"/>
+  </g>
+</svg>

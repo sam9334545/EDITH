@@ -2,6 +2,7 @@ import { RESOURCE_TYPES } from '@shared/contracts.js';
 import EmptyState from '../common/EmptyState.jsx';
 import StatusBadge from '../common/StatusBadge.jsx';
 import { formatDate } from '../../utils/formatters.js';
+import { RESOURCE_ICON } from '../common/Icons.jsx';
 
 const RESOURCE_LABELS = {
   location: 'Location',
@@ -29,7 +30,9 @@ export default function PermissionGrid({ app, onToggle, busy }) {
         return (
           <article className="permission-card" key={resource}>
             <div className="permission-topline">
-              <span className={`resource-symbol resource-${resource}`} aria-hidden="true">{['⌖', '◎', '▧', '◖', '▤'][index]}</span>
+              <span className={`resource-symbol resource-${resource}`} aria-hidden="true">
+                {(() => { const R = RESOURCE_ICON[resource]; return R ? <R width="18" height="18" /> : null; })()}
+              </span>
               <StatusBadge tone={enabled ? 'success' : 'muted'}>{enabled ? 'Enabled' : 'Disabled'}</StatusBadge>
             </div>
             <div><h3>{RESOURCE_LABELS[resource]}</h3><p>{RESOURCE_DESCRIPTIONS[resource]}</p></div>

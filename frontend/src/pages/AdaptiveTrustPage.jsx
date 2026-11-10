@@ -8,7 +8,9 @@ import TrustRing from '../components/common/TrustRing.jsx';
 import EmptyState from '../components/common/EmptyState.jsx';
 import LoadingState from '../components/common/LoadingState.jsx';
 import ErrorState from '../components/common/ErrorState.jsx';
-import { formatDate } from '../utils/formatters.js';
+import { formatDate, humanize } from '../utils/formatters.js';
+import { Explainer } from '../components/common/Illustration.jsx';
+import { GaugeIcon, PulseIcon, ShieldIcon, CheckIcon, RefreshIcon } from '../components/common/Icons.jsx';
 
 const RISK_BADGES = {
   low_risk: { tone: 'success', label: 'Low Risk Profile' },
@@ -132,7 +134,7 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
               onClick={() => loadData(selectedAppId)}
               disabled={loading || actionBusy}
             >
-              ↻ Refresh
+              <RefreshIcon width="15" height="15" /> Refresh
             </button>
             <button
               type="button"
@@ -140,7 +142,7 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
               onClick={handleCleanStreakAudit}
               disabled={loading || actionBusy}
             >
-              ⚡ Audit Clean Streak
+              <PulseIcon width="15" height="15" /> Audit clean streak
             </button>
             <button
               type="button"
@@ -157,26 +159,42 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
       {/* KPI Overview Grid */}
       <div className="kpi-grid">
         <article className="kpi-card kpi-success">
-          <div className="kpi-topline"><span>MAX SCORE CEILING</span><span className="kpi-icon">🎯</span></div>
+          <div className="kpi-topline"><span>Max score ceiling</span><span className="kpi-icon"><GaugeIcon width="16" height="16" /></span></div>
           <div className="kpi-value">100<small>pts</small></div>
           <p>Strict deterministic scoring bounds [0 - 100]</p>
         </article>
         <article className="kpi-card kpi-warning">
-          <div className="kpi-topline"><span>ESCALATION MULTIPLIER</span><span className="kpi-icon">📈</span></div>
+          <div className="kpi-topline"><span>Escalation multiplier</span><span className="kpi-icon"><PulseIcon width="16" height="16" /></span></div>
           <div className="kpi-value">{config?.escalationMultiplier ?? 1.5}<small>x</small></div>
           <p>Compound penalty on repeated threat occurrences</p>
         </article>
         <article className="kpi-card kpi-info">
-          <div className="kpi-topline"><span>CLEAN STREAK THRESHOLD</span><span className="kpi-icon">🛡️</span></div>
+          <div className="kpi-topline"><span>Clean streak threshold</span><span className="kpi-icon"><ShieldIcon width="16" height="16" /></span></div>
           <div className="kpi-value">{config?.cleanStreakThreshold ?? 10}<small>calls</small></div>
           <p>Permitted requests required for automatic streak bonus</p>
         </article>
         <article className="kpi-card kpi-neutral">
-          <div className="kpi-topline"><span>STREAK BONUS</span><span className="kpi-icon">✨</span></div>
+          <div className="kpi-topline"><span>Streak bonus</span><span className="kpi-icon"><CheckIcon width="16" height="16" /></span></div>
           <div className="kpi-value">+{config?.cleanStreakBonus ?? 2}<small>pts</small></div>
           <p>Progressive recovery awarded per clean evaluation</p>
         </article>
       </div>
+
+      <Panel title="How trust changes over time" eyebrow="Evidence in, score out">
+        <Explainer
+          name="adaptive-trust-engine"
+          alt="A trust ring fed by positive and negative behavioural signals, beside two trajectories: a rising recovery line for clean usage and a falling escalation line for repeated violations."
+          title="Every movement is explained"
+          reverse
+        >
+          <ul className="explainer-list">
+            <li><strong>Penalties are evidence-based.</strong> A score only falls when a new security alert is recorded, and the deduction matches that alert&apos;s severity.</li>
+            <li><strong>Repeat offences escalate.</strong> The same violation happening again is multiplied, so persistent misbehaviour falls faster than a one-off.</li>
+            <li><strong>Clean behaviour recovers.</strong> A sustained run of permitted requests earns the application trust back, up to the score ceiling.</li>
+            <li><strong>Nothing is hidden.</strong> Each change is written to the trust history with its reason, so a score can always be traced back to the events that caused it.</li>
+          </ul>
+        </Explainer>
+      </Panel>
 
       {/* Main Adaptive Layout */}
       <div className="dashboard-grid dashboard-grid-main">
@@ -281,8 +299,13 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
                             return (
                               <tr key={adj.id || idx}>
                                 <td>
-                                  <strong>{adj.score}</strong>
-                                  <small className="text-subtle"> ({adj.level})</small>
+                                  {/* Trust-history rows do not always carry a resulting score/level
+                                      (older entries record only the change). Fall back rather than
+                                      rendering an empty "()" in the audit trail. */}
+                                  <strong>{adj.score ?? adj.newScore ?? '—'}</strong>
+                                  {(adj.level || adj.trustLevel) && (
+                                    <small className="text-subtle"> ({humanize(adj.level || adj.trustLevel)})</small>
+                                  )}
                                 </td>
                                 <td>
                                   <span className={`badge badge-${isPenalty ? 'danger' : 'success'}`}>
@@ -345,7 +368,7 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
                 style={{ marginTop: '16px', width: '100%' }}
                 disabled={actionBusy || loading}
               >
-                {actionBusy ? 'Applying Credit...' : '✓ Award Trust Recovery'}
+                {actionBusy ? 'Applying credit…' : 'Award trust recovery'}
               </button>
             </form>
           </Panel>

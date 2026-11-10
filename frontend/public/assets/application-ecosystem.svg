@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" fill="none" role="img">
+  <title>Applications, the governance layer, and protected resources</title>
+  <defs>
+    <linearGradient id="e-core" x1="500" y1="236" x2="500" y2="384" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3d8b6e"/><stop offset="1" stop-color="#1a4d3a"/>
+    </linearGradient>
+    <filter id="e-soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#15402f" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <rect width="1000" height="620" rx="28" fill="#f7fbf9"/>
+
+  <!-- links: apps -> governance -->
+  <g stroke="#5aa688" stroke-width="2.5" fill="none" opacity="0.8">
+    <path d="M196 148 C 300 180, 360 250, 398 288"/>
+    <path d="M196 310 H394"/>
+    <path d="M196 472 C 300 440, 360 370, 398 332"/>
+  </g>
+  <!-- links: governance -> resources (one restricted, one monitored) -->
+  <g stroke="#5aa688" stroke-width="2.5" fill="none" opacity="0.8">
+    <path d="M602 288 C 660 240, 716 160, 790 126"/>
+    <path d="M606 310 H800"/>
+    <path d="M602 332 C 660 380, 716 460, 790 494"/>
+  </g>
+  <path d="M700 196 C 724 180, 748 164, 772 150" stroke="#d97706" stroke-width="3" fill="none" stroke-dasharray="7 8"/>
+  <path d="M700 424 C 724 440, 748 456, 772 470" stroke="#dc2626" stroke-width="3" fill="none" stroke-dasharray="7 8"/>
+
+  <!-- application nodes (left) -->
+  <g filter="url(#e-soft)">
+    <rect x="48" y="104" width="148" height="88" rx="24" fill="#ffffff" stroke="#a8d5c2" stroke-width="2.5"/>
+    <rect x="76" y="130" width="38" height="38" rx="11" fill="#d4ede2"/>
+    <rect x="126" y="138" width="46" height="9" rx="4.5" fill="#dcefe5"/>
+    <rect x="126" y="155" width="30" height="9" rx="4.5" fill="#e9f4ef"/>
+  </g>
+  <g filter="url(#e-soft)">
+    <rect x="48" y="266" width="148" height="88" rx="24" fill="#ffffff" stroke="#a8d5c2" stroke-width="2.5"/>
+    <rect x="76" y="292" width="38" height="38" rx="11" fill="#d4ede2"/>
+    <rect x="126" y="300" width="46" height="9" rx="4.5" fill="#dcefe5"/>
+    <rect x="126" y="317" width="30" height="9" rx="4.5" fill="#e9f4ef"/>
+  </g>
+  <g filter="url(#e-soft)">
+    <rect x="48" y="428" width="148" height="88" rx="24" fill="#ffffff" stroke="#a8d5c2" stroke-width="2.5"/>
+    <rect x="76" y="454" width="38" height="38" rx="11" fill="#d4ede2"/>
+    <rect x="126" y="462" width="46" height="9" rx="4.5" fill="#dcefe5"/>
+    <rect x="126" y="479" width="30" height="9" rx="4.5" fill="#e9f4ef"/>
+  </g>
+
+  <!-- central governance layer -->
+  <g filter="url(#e-soft)">
+    <rect x="398" y="236" width="204" height="148" rx="36" fill="url(#e-core)"/>
+    <rect x="398" y="236" width="204" height="148" rx="36" fill="none" stroke="#ffffff" stroke-opacity="0.4" stroke-width="2.5"/>
+    <path d="M500 272 L556 294 C556 294 556 342 500 366 C444 342 444 294 444 294 Z" fill="#ffffff" opacity="0.94"/>
+    <path d="M478 316 l14 15 l30 -32" stroke="#2f6d56" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <!-- resource nodes (right): location, contacts, camera, microphone, files -->
+  <g filter="url(#e-soft)">
+    <rect x="800" y="86" width="152" height="80" rx="22" fill="#ffffff" stroke="#f0d8a8" stroke-width="2.5"/>
+    <path d="M838 106 c -14 0 -24 11 -24 24 c 0 18 24 36 24 36 c 0 0 24 -18 24 -36 c 0 -13 -10 -24 -24 -24 z" fill="#d97706"/>
+    <circle cx="838" cy="130" r="8" fill="#ffffff"/>
+    <rect x="876" y="118" width="56" height="9" rx="4.5" fill="#f6ead2"/>
+    <rect x="876" y="135" width="36" height="9" rx="4.5" fill="#faf2e2"/>
+  </g>
+  <g filter="url(#e-soft)">
+    <rect x="800" y="270" width="152" height="80" rx="22" fill="#ffffff" stroke="#a8d5c2" stroke-width="2.5"/>
+    <circle cx="838" cy="302" r="14" fill="#3d8b6e"/>
+    <path d="M814 334 c 0 -14 11 -22 24 -22 c 13 0 24 8 24 22 z" fill="#3d8b6e"/>
+    <rect x="876" y="302" width="56" height="9" rx="4.5" fill="#dcefe5"/>
+    <rect x="876" y="319" width="36" height="9" rx="4.5" fill="#e9f4ef"/>
+  </g>
+  <g filter="url(#e-soft)">
+    <rect x="800" y="454" width="152" height="80" rx="22" fill="#ffffff" stroke="#f2c6c6" stroke-width="2.5"/>
+    <rect x="812" y="478" width="52" height="36" rx="9" fill="#dc2626"/>
+    <circle cx="838" cy="496" r="11" fill="#ffffff"/>
+    <rect x="876" y="486" width="56" height="9" rx="4.5" fill="#f7dede"/>
+    <rect x="876" y="503" width="36" height="9" rx="4.5" fill="#fbecec"/>
+  </g>
+</svg>

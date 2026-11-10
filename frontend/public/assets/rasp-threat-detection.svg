@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" fill="none" role="img">
+  <title>Runtime request inspection: blocked and permitted paths</title>
+  <defs>
+    <linearGradient id="r-gate" x1="500" y1="110" x2="500" y2="510" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3d8b6e"/><stop offset="1" stop-color="#1a4d3a"/>
+    </linearGradient>
+    <linearGradient id="r-sheen" x1="440" y1="110" x2="560" y2="510" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.26"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="r-soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#15402f" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <rect width="1000" height="620" rx="28" fill="#f7fbf9"/>
+
+  <!-- incoming requests -->
+  <g filter="url(#r-soft)">
+    <rect x="44" y="196" width="150" height="72" rx="20" fill="#ffffff" stroke="#a8d5c2" stroke-width="2.5"/>
+    <circle cx="80" cy="232" r="13" fill="#3d8b6e"/>
+    <rect x="104" y="220" width="66" height="9" rx="4.5" fill="#dcefe5"/>
+    <rect x="104" y="238" width="44" height="9" rx="4.5" fill="#e9f4ef"/>
+  </g>
+  <g filter="url(#r-soft)">
+    <rect x="44" y="346" width="150" height="72" rx="20" fill="#ffffff" stroke="#f2c6c6" stroke-width="2.5"/>
+    <circle cx="80" cy="382" r="13" fill="#dc2626"/>
+    <rect x="104" y="370" width="66" height="9" rx="4.5" fill="#f7dede"/>
+    <rect x="104" y="388" width="44" height="9" rx="4.5" fill="#fbecec"/>
+  </g>
+
+  <!-- request flow into the inspection layer -->
+  <g stroke="#5aa688" stroke-width="3.5" fill="none" stroke-linecap="round">
+    <path d="M202 232 H392"/>
+  </g>
+  <g stroke="#dc2626" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.9">
+    <path d="M202 382 H392"/>
+  </g>
+  <path d="M376 222 l18 10 l-18 10 z" fill="#5aa688"/>
+  <path d="M376 372 l18 10 l-18 10 z" fill="#dc2626"/>
+
+  <!-- inspection layer -->
+  <g filter="url(#r-soft)">
+    <rect x="404" y="110" width="192" height="400" rx="34" fill="url(#r-gate)"/>
+    <rect x="404" y="110" width="192" height="400" rx="34" fill="url(#r-sheen)"/>
+    <rect x="404" y="110" width="192" height="400" rx="34" fill="none" stroke="#ffffff" stroke-opacity="0.4" stroke-width="2.5"/>
+    <!-- inspection scan lines -->
+    <g stroke="#ffffff" stroke-opacity="0.5" stroke-width="3" stroke-linecap="round">
+      <path d="M444 186 h112"/><path d="M444 232 h112"/><path d="M444 278 h112"/><path d="M444 324 h112"/>
+    </g>
+    <!-- magnifier -->
+    <circle cx="500" cy="404" r="38" fill="none" stroke="#ffffff" stroke-width="7"/>
+    <path d="M528 432 l28 28" stroke="#ffffff" stroke-width="9" stroke-linecap="round"/>
+  </g>
+
+  <!-- permitted path out (top) -->
+  <g stroke="#3d8b6e" stroke-width="3.5" fill="none" stroke-linecap="round">
+    <path d="M606 232 H790"/>
+  </g>
+  <path d="M778 222 l18 10 l-18 10 z" fill="#3d8b6e"/>
+  <g filter="url(#r-soft)">
+    <rect x="802" y="190" width="154" height="84" rx="22" fill="#ffffff" stroke="#a8d5c2" stroke-width="2.5"/>
+    <circle cx="844" cy="232" r="20" fill="#e2f1e9"/>
+    <path d="M835 232 l7 8 l14 -16" stroke="#2f6d56" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <rect x="876" y="224" width="58" height="9" rx="4.5" fill="#dcefe5"/>
+    <rect x="876" y="241" width="38" height="9" rx="4.5" fill="#e9f4ef"/>
+  </g>
+
+  <!-- blocked path (stopped at the layer) -->
+  <g stroke="#dc2626" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-dasharray="9 10" opacity="0.75">
+    <path d="M606 382 H700"/>
+  </g>
+  <g filter="url(#r-soft)">
+    <circle cx="742" cy="382" r="34" fill="#ffffff" stroke="#dc2626" stroke-width="6"/>
+    <path d="M726 366 l32 32 M758 366 l-32 32" stroke="#dc2626" stroke-width="7" stroke-linecap="round"/>
+  </g>
+
+  <!-- security alert raised by the block -->
+  <g stroke="#d97706" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="6 8">
+    <path d="M768 414 C 820 450, 860 460, 884 462"/>
+  </g>
+  <g filter="url(#r-soft)">
+    <rect x="802" y="432" width="154" height="78" rx="22" fill="#ffffff" stroke="#f0d8a8" stroke-width="2.5"/>
+    <path d="M844 452 l22 38 h-44 z" fill="#d97706"/>
+    <rect x="880" y="462" width="54" height="9" rx="4.5" fill="#f6ead2"/>
+    <rect x="880" y="479" width="34" height="9" rx="4.5" fill="#faf2e2"/>
+  </g>
+</svg>

@@ -1,10 +1,36 @@
 // M1 In-Memory Store for E.D.I.T.H.
 import seedData from '../data/seedData.js';
-import { trustLevelFor, GUARD_MODES, DEFAULT_GUARD_MODE } from '../../shared/contracts.js';
+import {
+  trustLevelFor,
+  GUARD_MODES,
+  DEFAULT_GUARD_MODE,
+  ADAPTIVE_TRUST_CONFIG,
+} from '../../shared/contracts.js';
 
 function initialGuardMode() {
   const env = process.env.RUNTIME_GUARD_MODE;
   return Object.values(GUARD_MODES).includes(env) ? env : DEFAULT_GUARD_MODE;
+}
+
+/**
+ * Adaptive trust runtime configuration.
+ *
+ * Both behavioural switches default to false so the canonical judging demo
+ * (FitTrack 94 -> 79 -> 71 -> 63) is byte-identical to the Round 1 MVP.
+ * The tuning constants are surfaced so GET /api/adaptive/config can report them.
+ */
+function defaultAdaptiveConfig() {
+  return {
+    escalationEnabled: false,
+    autoRecoveryOnRecommendation: false,
+    escalationMultiplier: ADAPTIVE_TRUST_CONFIG.REPEATED_VIOLATION.ESCALATION_MULTIPLIER,
+    escalationWindowMs: ADAPTIVE_TRUST_CONFIG.REPEATED_VIOLATION.WINDOW_MS,
+    additionalPenalty: ADAPTIVE_TRUST_CONFIG.REPEATED_VIOLATION.ADDITIONAL_PENALTY,
+    recoveryPoints: ADAPTIVE_TRUST_CONFIG.RECOVERY.ON_CORRECTIVE_ACTION,
+    cleanStreakThreshold: ADAPTIVE_TRUST_CONFIG.RECOVERY.CLEAN_STREAK_THRESHOLD,
+    cleanStreakBonus: ADAPTIVE_TRUST_CONFIG.RECOVERY.CLEAN_STREAK_BONUS,
+    maxRecoveryCeiling: ADAPTIVE_TRUST_CONFIG.RECOVERY.MAX_RECOVERY_CEILING,
+  };
 }
 
 class DataStore {
@@ -24,6 +50,9 @@ class DataStore {
     this.counters = JSON.parse(JSON.stringify(seed.counters));
     this.guardMode = initialGuardMode();
     this.guardDecisions = [];
+    // Behavioural DNA baseline cache, keyed `${appId}::${resource}`.
+    this.baselines = {};
+    this.adaptiveConfig = defaultAdaptiveConfig();
     this._mockClock = null;
     return this.getState();
   }
@@ -249,6 +278,62 @@ class DataStore {
     if (filter.appId) list = list.filter((t) => t.appId === filter.appId);
     if (filter.limit) list = list.slice(0, filter.limit);
     return list;
+  }
+
+  /* ---- Behavioural DNA baselines ---- */
+
+  /**
+   * Returns cached baseline profiles, optionally filtered to one application.
+   * @param {string|null} appId
+   * @returns {Array<Object>}
+   */
+  getBaselines(appId = null) {
+    const list = Object.values(this.baselines || {});
+    return appId ? list.filter((b) => b.appId === appId) : list;
+  }
+
+  /**
+   * Upserts one baseline profile.
+   * @param {string} appId
+   * @param {string} resource
+   * @param {Object} baseline
+   * @returns {Object}
+   */
+  updateBaseline(appId, resource, baseline) {
+    if (!this.baselines) this.baselines = {};
+    const entry = {
+      ...baseline,
+      appId,
+      resource,
+      updatedAt: this.clock.now(),
+    };
+    this.baselines[`${appId}::${resource}`] = entry;
+    return entry;
+  }
+
+  /* ---- Adaptive trust configuration ---- */
+
+  getAdaptiveConfig() {
+    if (!this.adaptiveConfig) this.adaptiveConfig = defaultAdaptiveConfig();
+    return { ...this.adaptiveConfig };
+  }
+
+  /**
+   * Merges a partial configuration patch. Unknown keys are ignored so a
+   * malformed PATCH body cannot inject arbitrary fields into the engine.
+   * @param {Object} patch
+   * @returns {Object}
+   */
+  updateAdaptiveConfig(patch = {}) {
+    const current = this.getAdaptiveConfig();
+    const allowed = Object.keys(defaultAdaptiveConfig());
+    for (const [key, value] of Object.entries(patch)) {
+      if (allowed.includes(key) && value !== undefined && value !== null) {
+        current[key] = value;
+      }
+    }
+    this.adaptiveConfig = current;
+    return { ...current };
   }
 }
 
