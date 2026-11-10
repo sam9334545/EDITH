@@ -2,59 +2,92 @@
 import express from 'express';
 import cors from 'cors';
 import { fail } from '../shared/contracts.js';
+import { loadEnvironment } from './config/environment.js';
+import { databaseHealth } from './database/connection.js';
 import raspMiddleware from './middleware/raspMiddleware.js';
 import routes from './routes/index.js';
 
+loadEnvironment();
+
 const app = express();
-
 const rawOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
-const allowedOrigins = rawOrigin.split(',').map((o) => o.trim());
+const allowedOrigins = rawOrigin.split(',').map((origin) => origin.trim());
 
-// Configure CORS
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      try {
-        const url = new URL(origin);
-        if (
-          rawOrigin === '*' ||
-          allowedOrigins.includes('*') ||
-          allowedOrigins.includes(origin) ||
-          /\.vercel\.app$/.test(url.hostname) ||
-          /^localhost(:\d+)?$/.test(url.host)
-        ) {
-          return callback(null, true);
-        }
-      } catch {
-        // Fallback
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    try {
+      const url = new URL(origin);
+      if (
+        rawOrigin === '*'
+        || allowedOrigins.includes('*')
+        || allowedOrigins.includes(origin)
+        || /\.vercel\.app$/.test(url.hostname)
+        || /^localhost(:\d+)?$/.test(url.host)
+      ) {
+        return callback(null, true);
       }
-      return callback(null, true);
-    },
-    credentials: true,
-  })
-);
+    } catch {
+      // Preserve the main-branch CORS fallback for malformed origins.
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+}));
 
-// Body parsing with safe size limit
 app.use(express.json({ limit: '100kb' }));
-
-// RASP: inline request inspection. Must come AFTER body parsing and BEFORE any route.
 app.use(raspMiddleware);
 
-// Mount central API routes
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health') return next();
+  if (!databaseHealth().connected) {
+    return res.status(503).json(fail('DATABASE_UNAVAILABLE', 'Database is unavailable'));
+  }
+  return next();
+});
+
 app.use('/api', routes);
 
-// 404 Handler
 app.use((req, res) => {
   return res.status(404).json(fail('NOT_FOUND', `Route ${req.method} ${req.url} not found`));
 });
 
-// Global Error Handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  const code = err.code || 'INTERNAL_ERROR';
-  const status = code === 'VALIDATION_ERROR' ? 400 : 500;
-  return res.status(status).json(fail(code, err.message || 'Internal server error'));
+app.use((error, req, res, next) => {
+  if (res.headersSent) return next(error);
+
+  if (error.type === 'entity.parse.failed') {
+    return res.status(400).json(fail('VALIDATION_ERROR', 'Request body must contain valid JSON'));
+  }
+
+  const validation = error.code === 'VALIDATION_ERROR'
+    || error.code === 'RESOURCE_INVALID'
+    || error.name === 'ValidationError'
+    || error.name === 'CastError';
+  const notFound = ['APP_NOT_FOUND', 'RECOMMENDATION_NOT_FOUND', 'ALERT_NOT_FOUND'].includes(error.code);
+  const resetDisabled = error.code === 'RESET_DISABLED';
+  const databaseUnavailable = [
+    'MongooseServerSelectionError',
+    'MongoNetworkError',
+    'MongoNotConnectedError',
+  ].includes(error.name);
+  const status = validation ? 400 : notFound ? 404 : resetDisabled ? 403 : databaseUnavailable ? 503 : 500;
+  const code = validation
+    ? error.code || 'VALIDATION_ERROR'
+    : notFound
+      ? error.code
+      : resetDisabled
+        ? error.code
+        : databaseUnavailable
+          ? 'DATABASE_UNAVAILABLE'
+          : 'INTERNAL_ERROR';
+  const message = status === 500
+    ? 'Internal server error'
+    : databaseUnavailable
+      ? 'Database is unavailable'
+      : error.message;
+
+  if (status >= 500) console.error(`Request failed: ${error.name || 'Error'}`);
+  return res.status(status).json(fail(code, message));
 });
 
 export { app };

@@ -80,7 +80,7 @@ test('R3 detects suspended access before checking a disabled permission', () => 
   assert.deepEqual(ruleIds(result), ['R3']);
 });
 
-test('R4 fires for three denied requests in five minutes, regardless of denial reason', () => {
+test('R4 fires for three permission-disabled denials in five minutes', () => {
   const prior = [
     accessEvent('evt_0001', 'contacts', -300000, {
       status: ACCESS_STATUS.DENIED,
@@ -88,7 +88,7 @@ test('R4 fires for three denied requests in five minutes, regardless of denial r
     }),
     accessEvent('evt_0002', 'camera', -1000, {
       status: ACCESS_STATUS.DENIED,
-      denialReason: 'app_suspended',
+      denialReason: 'permission_disabled',
     }),
   ];
   const current = accessEvent('evt_0003', 'location', 0, {
@@ -96,6 +96,20 @@ test('R4 fires for three denied requests in five minutes, regardless of denial r
     denialReason: 'permission_disabled',
   });
   assert.ok(ruleIds(analyzeEvent(current, application(), [...prior, current])).includes('R4'));
+});
+
+test('R4 excludes suspended-app denials', () => {
+  const denied = Array.from({ length: 3 }, (_, index) => accessEvent(
+    `evt_${index + 1}`,
+    'location',
+    -1000 * (3 - index),
+    { status: ACCESS_STATUS.DENIED, denialReason: 'app_suspended' },
+  ));
+  const current = accessEvent('evt_0004', 'location', 0, {
+    status: ACCESS_STATUS.DENIED,
+    denialReason: 'app_suspended',
+  });
+  assert.equal(ruleIds(analyzeEvent(current, application(), [...denied, current])).includes('R4'), false);
 });
 
 test('R4 does not fire for two denials or denials outside five minutes', () => {

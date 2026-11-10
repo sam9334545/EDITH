@@ -5,6 +5,9 @@ import express from 'express';
 import { store } from '../store/index.js';
 import { ACTIVITY_EVENT_TYPES } from '../../shared/contracts.js';
 import { createRaspMiddleware } from '../middleware/raspMiddleware.js';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
+import { connectDatabase, disconnectDatabase } from '../database/connection.js';
+import { seedApplications } from '../services/mongoService.js';
 import realApp from '../app.js';
 
 function buildApp(options = {}) {
@@ -208,8 +211,18 @@ describe('RASP middleware', () => {
   describe('mounted in the real EDITH app', () => {
     let realServer;
     let realBase;
-    before(async () => ({ server: realServer, base: realBase } = await listen(realApp)));
-    after(() => new Promise((resolve) => realServer.close(resolve)));
+    let replicaSet;
+    before(async () => {
+      replicaSet = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
+      await connectDatabase(replicaSet.getUri('edith_rasp_test'));
+      await seedApplications();
+      ({ server: realServer, base: realBase } = await listen(realApp));
+    });
+    after(async () => {
+      await new Promise((resolve) => realServer.close(resolve));
+      await disconnectDatabase();
+      await replicaSet.stop();
+    });
 
     it('still serves a normal simulate request', async () => {
       const res = await post(realBase, '/api/events/simulate', { appId: 'app_01', resource: 'location', reason: 'Navigation' });

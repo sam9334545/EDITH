@@ -7,19 +7,19 @@ import {
   ok,
   fail,
 } from '../../shared/contracts.js';
-import * as permissionService from '../services/permissionService.js';
+import * as mongoService from '../services/mongoService.js';
 
 /**
  * GET /api/apps
  * Return all registered applications and their current permission states.
  */
-export function getApps(req, res) {
+export async function getApps(req, res) {
   const statusFilter = req.query.status || null;
   if (statusFilter && !Object.values(APPLICATION_STATUS).includes(statusFilter)) {
     return res.status(400).json(fail('VALIDATION_ERROR', `Invalid status filter. Must be one of: ${Object.values(APPLICATION_STATUS).join(', ')}`));
   }
 
-  const apps = permissionService.getAllApps(statusFilter);
+  const apps = await mongoService.getApps(statusFilter);
   return res.status(200).json(ok(apps, 'Applications retrieved successfully'));
 }
 
@@ -27,9 +27,9 @@ export function getApps(req, res) {
  * GET /api/apps/:id
  * Return detailed information about one registered application.
  */
-export function getAppById(req, res) {
+export async function getAppById(req, res) {
   const { id } = req.params;
-  const app = permissionService.getAppById(id);
+  const app = await mongoService.getApp(id);
 
   if (!app) {
     return res.status(404).json(fail('APP_NOT_FOUND', 'Application not found'));
@@ -42,7 +42,7 @@ export function getAppById(req, res) {
  * PATCH /api/apps/:id/permissions
  * Approve (enable: true) or Restrict/Revoke (enable: false) an individual resource permission.
  */
-export function updatePermission(req, res) {
+export async function updatePermission(req, res) {
   const { id } = req.params;
   const body = req.body;
 
@@ -77,25 +77,15 @@ export function updatePermission(req, res) {
     return res.status(400).json(fail('VALIDATION_ERROR', validationError));
   }
 
-  try {
-    const updatedApp = permissionService.updatePermission(id, body.resource, body.enabled);
-    return res.status(200).json(ok(updatedApp, 'Permission updated successfully'));
-  } catch (err) {
-    if (err.code === 'APP_NOT_FOUND') {
-      return res.status(404).json(fail('APP_NOT_FOUND', 'Application not found'));
-    }
-    if (err.code === 'RESOURCE_INVALID') {
-      return res.status(400).json(fail('RESOURCE_INVALID', err.message));
-    }
-    return res.status(500).json(fail('INTERNAL_ERROR', 'Internal server error'));
-  }
+  const updatedApp = await mongoService.updatePermission(id, body.resource, body.enabled);
+  return res.status(200).json(ok(updatedApp, 'Permission updated successfully'));
 }
 
 /**
  * PATCH /api/apps/:id/status
  * Update application status: Suspend ('suspended') or Reactivate ('active').
  */
-export function updateStatus(req, res) {
+export async function updateStatus(req, res) {
   const { id } = req.params;
   const body = req.body;
 
@@ -119,18 +109,11 @@ export function updateStatus(req, res) {
     return res.status(400).json(fail('VALIDATION_ERROR', validationError));
   }
 
-  try {
-    const updatedApp = permissionService.updateAppStatus(id, body.status);
-    const msg = body.status === APPLICATION_STATUS.SUSPENDED
-      ? 'Application suspended successfully'
-      : 'Application reactivated successfully';
-    return res.status(200).json(ok(updatedApp, msg));
-  } catch (err) {
-    if (err.code === 'APP_NOT_FOUND') {
-      return res.status(404).json(fail('APP_NOT_FOUND', 'Application not found'));
-    }
-    return res.status(500).json(fail('INTERNAL_ERROR', 'Internal server error'));
-  }
+  const updatedApp = await mongoService.updateAppStatus(id, body.status);
+  const msg = body.status === APPLICATION_STATUS.SUSPENDED
+    ? 'Application suspended successfully'
+    : 'Application reactivated successfully';
+  return res.status(200).json(ok(updatedApp, msg));
 }
 
 export const updateAppPermission = updatePermission;

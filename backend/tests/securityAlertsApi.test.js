@@ -2,7 +2,7 @@ import test, { beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
 import { store } from '../store/index.js';
-import securityRoutes from '../routes/securityRoutes.js';
+import securityRoutes from '../test-support/inMemorySecurityRoutes.js';
 
 beforeEach(() => store.resetToSeed());
 

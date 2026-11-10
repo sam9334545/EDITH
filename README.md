@@ -44,6 +44,19 @@ Traditional Web Application Firewalls (WAFs) and Cloud Entitlement tools (CIEMs)
 
 **EDITH embeds an enterprise-grade RASP engine directly into the application request pipeline.** Every payload passing through the platform is inspected inline before controller execution.
 
+<<<<<<< HEAD
+## Run
+Requires Node.js 20.12 or newer.
+
+```bash
+git clone REPOSITORY_URL && cd EDITH
+cd backend && npm install
+# PowerShell: Copy-Item .env.example .env
+# Set MONGODB_URI in backend/.env before starting
+npm start                                   # http://localhost:4000/api/health
+cd ../frontend && npm install && npm run dev # http://localhost:5173
+=======
+>>>>>>> 8190aa0df18f9f4af4651fb7775bebc3bcc07e82
 ```
                       ┌────────────────────────────────────────┐
                       │    HTTP Request Ingress                │
@@ -73,8 +86,25 @@ Traditional Web Application Firewalls (WAFs) and Cloud Entitlement tools (CIEMs)
           └───────────────────────────────┘
 ```
 
+<<<<<<< HEAD
+## MongoDB Atlas
+1. In Atlas **Database Access**, create a database user with `readWrite` access to the E.D.I.T.H. database.
+2. In **Network Access**, allow only the backend host's IP address.
+3. Use **Connect → Drivers** to copy the Node.js connection string, replace its password placeholder with a URL-encoded password, and use the `edith` database name.
+4. Put the URI in `backend/.env` as `MONGODB_URI=...` for local development, or configure `MONGODB_URI` as a secret environment variable in the hosting service. Set `NODE_ENV=production` in production.
+
+Never commit `.env` files or put the URI in frontend configuration. Atlas replica sets support the transactions required by this backend. The backend connects and verifies indexes before listening, then inserts missing seed applications without overwriting existing state.
+
+The demo reset endpoint and `cd backend; npm run db:reset` are disabled unless both `NODE_ENV=development` and `ALLOW_DEMO_RESET=true` are set. Reset removes all records in the configured database; use it only with an isolated development database. `cd backend; npm run db:seed` safely inserts missing initial applications.
+
+Backend tests use an ephemeral single-node replica set and never clean up data in Atlas.
+
+## Demo
+Open the app -> Simulation panel -> "Run Demo Scenario" (requires the guarded development reset flag; runs the 7-step scenario; expected Fitness score 94 -> 79 -> 71 -> 63).
+=======
 ### Comprehensive Attack Vector Defense
 The EDITH RASP engine inspects and mitigates:
+>>>>>>> 8190aa0df18f9f4af4651fb7775bebc3bcc07e82
 
 * **SQL Injection (SQLi)**: Blocks `UNION SELECT`, quoted tautologies (`' OR '1'='1`), numeric tautologies (`1=1`), stacked destructive commands (`; DROP TABLE`, `; TRUNCATE`), and comment obfuscation.
 * **Path Traversal & Arbitrary File Access**: Intercepts `../`, multi-encoded `%2e%2e`, Unicode-escaped directory breaks, null bytes (`%00`), and sensitive OS target paths (`/etc/passwd`, `C:\Windows\System32`, `boot.ini`).
