@@ -8,6 +8,8 @@ import securityRoutes from './securityRoutes.js';
 import statsRoutes from './statsRoutes.js';
 import guardRouter from './guard.js';
 import postureRoutes from './postureRoutes.js';
+import dnaRoutes from './dnaRoutes.js';
+import adaptiveTrustRoutes from './adaptiveTrustRoutes.js';
 
 const router = Router();
 
@@ -22,5 +24,7 @@ router.use('/security', securityRoutes);
 // Runtime Guard: mode switch + decision log (GET/PATCH /api/guard/mode, GET /api/guard/decisions)
 router.use('/guard', guardRouter);
 router.use('/posture', postureRoutes);
+router.use('/dna', dnaRoutes);
+router.use('/adaptive', adaptiveTrustRoutes);
 
 export default router;

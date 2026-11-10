@@ -125,6 +125,36 @@ export default function Dashboard({
         <DashboardStat label="Active alerts" value={errors.alerts ? '—' : activeAlerts} detail={errors.alerts ? 'Alert API unavailable' : 'Unacknowledged alerts'} icon="◇" tone="danger" />
         <DashboardStat label="Average trust" value={errors.apps ? '—' : averageTrust === null ? '—' : averageTrust} suffix={averageTrust === null ? '' : '/100'} detail="Based on API trust scores" icon="◉" tone="espresso" />
       </section>
+
+      {/* Advanced Security & AI Engines Showcase */}
+      <section className="engine-showcase-grid" aria-label="Integrated Security Engines">
+        <div className="engine-card" onClick={() => onNavigate('posture')} role="button" tabIndex={0}>
+          <span className="engine-card-icon" aria-hidden="true">◈</span>
+          <div className="engine-card-content">
+            <h4>CNAPP & Security Posture</h4>
+            <p>Cloud-native application protection with risk scoring, compliance drift, and security findings.</p>
+            <span className="engine-card-link">Explore Posture Overview →</span>
+          </div>
+        </div>
+
+        <div className="engine-card" onClick={() => onNavigate('dna')} role="button" tabIndex={0}>
+          <span className="engine-card-icon" aria-hidden="true">🧬</span>
+          <div className="engine-card-content">
+            <h4>Behavioral DNA Engine</h4>
+            <p>Heuristic telemetry profiling, rolling access baselines, and runtime drift detection.</p>
+            <span className="engine-card-link">View Application Baselines →</span>
+          </div>
+        </div>
+
+        <div className="engine-card" onClick={() => onNavigate('adaptive')} role="button" tabIndex={0}>
+          <span className="engine-card-icon" aria-hidden="true">⚡</span>
+          <div className="engine-card-content">
+            <h4>Adaptive Trust Engine</h4>
+            <p>Closed-loop risk weighting, repeated-violation escalation, and clean streak trust credits.</p>
+            <span className="engine-card-link">Manage Adaptive Trust →</span>
+          </div>
+        </div>
+      </section>
       <div className="dashboard-grid dashboard-grid-main">
         <Panel title="Application trust overview" eyebrow="Across your workspace" className="span-two" action={<button type="button" className="text-link" onClick={() => onNavigate('applications')}>View all →</button>}>
           {errors.apps ? <ErrorState error={errors.apps} title="Applications are unavailable" /> : appsList.length ? (

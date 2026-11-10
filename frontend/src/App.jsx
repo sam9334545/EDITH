@@ -14,6 +14,8 @@ import { PosturePage } from './pages/PosturePage.jsx';
 import { RecommendationsPage } from './pages/Recommendations.jsx';
 import { SecurityPage } from './pages/SecurityAlerts.jsx';
 import { TrustPage } from './pages/TrustAnalysis.jsx';
+import { BehaviouralDnaPage } from './pages/BehaviouralDnaPage.jsx';
+import { AdaptiveTrustPage } from './pages/AdaptiveTrustPage.jsx';
 
 export default function App() {
   const controller = useApplicationController();
@@ -68,6 +70,8 @@ export default function App() {
       />;
       break;
     case 'policies': content = <PolicyManagement onNotify={notify} />; break;
+    case 'dna': content = <BehaviouralDnaPage apps={apps} onNotify={notify} />; break;
+    case 'adaptive': content = <AdaptiveTrustPage apps={apps} onNotify={notify} />; break;
     case 'permissions': content = <PermissionManagement {...shared} />; break;
     case 'monitoring': content = <MonitoringPage {...shared} accessRequestResult={accessRequestResult} />; break;
     case 'security': content = <SecurityPage {...shared} />; break;
