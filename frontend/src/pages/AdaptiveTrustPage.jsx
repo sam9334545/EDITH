@@ -181,13 +181,10 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
       />
 
       <div className="adaptive-flowchart-card">
-        <div className="adaptive-flowchart-header">
-          <div className="header-left">
+        <div className="adaptive-flowchart-topbar">
+          <div className="adaptive-flowchart-topbar-left">
             <span className="eyebrow">CONTINUOUS TRUST EVALUATION ENGINE</span>
-            <h3>Dynamic Trust Scoring &amp; Progressive Recovery Architecture</h3>
-            <p>
-              Unlike static access control, E.D.I.T.H. calculates real-time trust trajectories across permitted calls, behavioral deviations, and remediation actions.
-            </p>
+            <h3 className="adaptive-flowchart-title">Dynamic Trust Scoring &amp; Progressive Recovery Architecture</h3>
           </div>
           <span className="badge badge-success">MATHEMATICAL MODEL ACTIVE</span>
         </div>
