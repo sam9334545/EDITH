@@ -479,3 +479,307 @@ export function PostureTrendChart({ points = [] }) {
   );
 }
 
+export function DnaThreatModelGraph() {
+  return (
+    <div className="dna-threat-diagram-wrap" aria-label="Behavioral DNA Detection Architecture and Drift Model">
+      <svg
+        viewBox="0 0 500 205"
+        className="svg-chart"
+        role="img"
+        aria-label="Baseline vs Observed Telemetry Drift with Frequency Spike"
+      >
+        <defs>
+          <linearGradient id="dnaDriftFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#C94B4B" stopOpacity="0.18" />
+            <stop offset="60%" stopColor="#C94B4B" stopOpacity="0.05" />
+            <stop offset="100%" stopColor="#C94B4B" stopOpacity="0.0" />
+          </linearGradient>
+          <filter id="dnaDropShadow" x="-10%" y="-10%" width="120%" height="130%">
+            <feDropShadow dx="0" dy="1.5" stdDeviation="2" floodOpacity="0.08" />
+          </filter>
+        </defs>
+
+        {/* Clean card background */}
+        <rect x="0.5" y="0.5" width="499" height="204" rx="10" fill="#F8FAF9" stroke="#E2ECE7" />
+
+        {/* Subtle coordinate grid lines */}
+        <g stroke="#EDF2EE" strokeDasharray="2 3">
+          <line x1="24" y1="45" x2="476" y2="45" />
+          <line x1="24" y1="85" x2="476" y2="85" />
+          <line x1="24" y1="125" x2="476" y2="125" />
+          <line x1="120" y1="20" x2="120" y2="165" />
+          <line x1="240" y1="20" x2="240" y2="165" />
+          <line x1="360" y1="20" x2="360" y2="165" />
+        </g>
+
+        {/* Normal Tolerance Window shaded band */}
+        <rect x="25" y="128" width="450" height="26" rx="4" fill="rgba(38, 116, 92, 0.08)" />
+
+        {/* Stable 7-Day Baseline (green dashed line) */}
+        <line x1="25" y1="141" x2="475" y2="141" stroke="#26745C" strokeWidth="1.8" strokeDasharray="4 4" />
+
+        {/* Application Node / DNA Profile on Baseline */}
+        <g transform="translate(85, 141)" filter="url(#dnaDropShadow)">
+          <circle cx="0" cy="0" r="22" fill="#FFFFFF" stroke="#26745C" strokeWidth="2" />
+          <text x="0" y="-3" textAnchor="middle" fill="#123D32" fontSize="7" fontWeight="700" letterSpacing="0.05em">
+            APP NODE
+          </text>
+          <text x="0" y="7" textAnchor="middle" fill="#26745C" fontSize="5.5" fontWeight="600" letterSpacing="0.05em">
+            DNA PROFILE
+          </text>
+        </g>
+
+        {/* Drift Threshold (50 pts) horizontal dashed line & label */}
+        <line x1="150" y1="64" x2="475" y2="64" stroke="#C94B4B" strokeWidth="1.2" strokeDasharray="3 3" opacity="0.8" />
+        <g transform="translate(355, 55)">
+          <rect x="0" y="0" width="118" height="18" rx="4" fill="#FFF5F5" stroke="#FECACA" strokeWidth="0.8" />
+          <text x="59" y="12" textAnchor="middle" fill="#C94B4B" fontSize="7.5" fontWeight="700" letterSpacing="0.04em">
+            DRIFT THRESHOLD (50 pts)
+          </text>
+        </g>
+
+        {/* Observed Telemetry Drift filled curve area */}
+        <path
+          d="M 25 142 L 130 140 C 165 137, 195 90, 225 40 C 235 24, 248 24, 258 40 C 285 85, 315 136, 375 140 L 475 141 L 475 160 L 25 160 Z"
+          fill="url(#dnaDriftFill)"
+        />
+
+        {/* Observed Telemetry Drift stroke */}
+        <path
+          d="M 25 142 L 130 140 C 165 137, 195 90, 225 40 C 235 24, 248 24, 258 40 C 285 85, 315 136, 375 140 L 475 141"
+          fill="none"
+          stroke="#C94B4B"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        />
+
+        {/* Peak Frequency Spike Node */}
+        <g transform="translate(242, 28)">
+          <circle cx="0" cy="0" r="13" fill="#C94B4B" opacity="0.18" />
+          <circle cx="0" cy="0" r="8" fill="#C94B4B" stroke="#FFFFFF" strokeWidth="2" />
+          <text x="0" y="3.5" textAnchor="middle" fill="#FFFFFF" fontSize="9" fontWeight="900">
+            !
+          </text>
+        </g>
+
+        {/* Peak Callout Badge */}
+        <g transform="translate(258, 16)" filter="url(#dnaDropShadow)">
+          <rect x="0" y="0" width="138" height="24" rx="4" fill="#FFFFFF" stroke="#FECACA" strokeWidth="1" />
+          <text x="8" y="11" fill="#C94B4B" fontSize="7.5" fontWeight="800" letterSpacing="0.04em">
+            FREQUENCY SPIKE DETECTED
+          </text>
+          <text x="8" y="20" fill="#6C7D76" fontSize="6.5">
+            Velocity 3x &gt; 3.0x Baseline
+          </text>
+        </g>
+
+        {/* Legend at bottom */}
+        <g transform="translate(0, 185)">
+          {/* Stable baseline */}
+          <circle cx="72" cy="0" r="3.5" fill="#26745C" />
+          <text x="81" y="3" fill="#475569" fontSize="8" fontWeight="500">
+            Stable 7-Day Baseline
+          </text>
+
+          {/* Drift */}
+          <circle cx="212" cy="0" r="3.5" fill="#C94B4B" />
+          <text x="221" y="3" fill="#475569" fontSize="8" fontWeight="500">
+            Observed Telemetry Drift
+          </text>
+
+          {/* Tolerance window */}
+          <rect x="345" y="-4" width="12" height="8" rx="2" fill="rgba(38, 116, 92, 0.25)" />
+          <text x="362" y="3" fill="#475569" fontSize="8" fontWeight="500">
+            Normal Tolerance Window
+          </text>
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+export function AdaptiveTrustFlowChart({ score = 84, level = 'high' }) {
+  const numericScore = Math.max(0, Math.min(100, Math.round(Number(score) || 84)));
+  const circumference = 2 * Math.PI * 66; // ~414.69
+  const strokeDashoffset = circumference * (1 - numericScore / 100);
+
+  const levelColor = numericScore >= 75 ? '#26745C' : numericScore >= 50 ? '#D99A32' : '#C94B4B';
+  const levelText = numericScore >= 75 ? 'HIGH TRUST' : numericScore >= 50 ? 'MODERATE' : 'RESTRICTED';
+
+  return (
+    <div className="adaptive-flowchart-svg-wrap" aria-label="Adaptive trust scoring continuous evaluation flow">
+      <svg
+        viewBox="0 0 1060 360"
+        className="svg-chart"
+        role="img"
+        aria-label="Adaptive trust dynamic scoring architecture flowchart"
+      >
+        <defs>
+          {/* Crisp, large high-visibility flow markers */}
+          <marker id="flowArrowGreen" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+            <path d="M 0 2 L 10 6 L 0 10 z" fill="#26745C" />
+          </marker>
+          <marker id="flowArrowAmber" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+            <path d="M 0 2 L 10 6 L 0 10 z" fill="#D99A32" />
+          </marker>
+          <marker id="flowArrowRed" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+            <path d="M 0 2 L 10 6 L 0 10 z" fill="#C94B4B" />
+          </marker>
+          <filter id="flowCardShadow" x="-10%" y="-10%" width="120%" height="130%">
+            <feDropShadow dx="0" dy="3" stdDeviation="4" floodOpacity="0.08" />
+          </filter>
+        </defs>
+
+        {/* Flow Connectors: Left side (Positive / Green) flowing into center */}
+        {/* Top left card -> Center gauge top-left */}
+        <path
+          d="M 270 62 C 370 62, 400 110, 452 126"
+          fill="none"
+          stroke="#26745C"
+          strokeWidth="2.8"
+          strokeDasharray="6 5"
+          markerEnd="url(#flowArrowGreen)"
+        />
+
+        {/* Middle left card -> Center gauge middle-left */}
+        <path
+          d="M 270 180 C 340 180, 390 180, 440 180"
+          fill="none"
+          stroke="#26745C"
+          strokeWidth="2.8"
+          strokeDasharray="6 5"
+          markerEnd="url(#flowArrowGreen)"
+        />
+
+        {/* Bottom left card -> Center gauge bottom-left */}
+        <path
+          d="M 270 298 C 370 298, 400 250, 452 234"
+          fill="none"
+          stroke="#26745C"
+          strokeWidth="2.8"
+          strokeDasharray="6 5"
+          markerEnd="url(#flowArrowGreen)"
+        />
+
+        {/* Flow Connectors: Right side (Negative / Red & Amber) flowing from cards to center */}
+        {/* Top right card -> Center gauge top-right */}
+        <path
+          d="M 790 62 C 690 62, 660 110, 608 126"
+          fill="none"
+          stroke="#D99A32"
+          strokeWidth="2.8"
+          strokeDasharray="6 5"
+          markerEnd="url(#flowArrowAmber)"
+        />
+
+        {/* Middle right card -> Center gauge middle-right */}
+        <path
+          d="M 790 180 C 720 180, 670 180, 620 180"
+          fill="none"
+          stroke="#C94B4B"
+          strokeWidth="2.8"
+          strokeDasharray="6 5"
+          markerEnd="url(#flowArrowRed)"
+        />
+
+        {/* Bottom right card -> Center gauge bottom-right */}
+        <path
+          d="M 790 298 C 690 298, 660 250, 608 234"
+          fill="none"
+          stroke="#C94B4B"
+          strokeWidth="2.8"
+          strokeDasharray="6 5"
+          markerEnd="url(#flowArrowRed)"
+        />
+
+        {/* ================= LEFT CARDS (Positive Rebuilding) ================= */}
+        {/* Card 1: Clean Usage Streak */}
+        <g transform="translate(30, 24)" filter="url(#flowCardShadow)">
+          <rect x="0" y="0" width="240" height="76" rx="12" fill="#FFFFFF" stroke="#DCE7E1" strokeWidth="1.5" />
+          <circle cx="34" cy="38" r="20" fill="#E4F2EC" />
+          <text x="34" y="46" textAnchor="middle" fill="#26745C" fontSize="22" fontWeight="700">+</text>
+          <text x="66" y="34" fill="#182A25" fontSize="14" fontWeight="700">Clean Usage Streak</text>
+          <text x="66" y="55" fill="#5A6E65" fontSize="12">10 clean requests: +2 pts</text>
+        </g>
+
+        {/* Card 2: Corrective Action */}
+        <g transform="translate(30, 142)" filter="url(#flowCardShadow)">
+          <rect x="0" y="0" width="240" height="76" rx="12" fill="#FFFFFF" stroke="#DCE7E1" strokeWidth="1.5" />
+          <circle cx="34" cy="38" r="20" fill="#E4F2EC" />
+          <text x="34" y="44" textAnchor="middle" fill="#26745C" fontSize="18" fontWeight="700">✓</text>
+          <text x="66" y="34" fill="#182A25" fontSize="14" fontWeight="700">Corrective Action</text>
+          <text x="66" y="55" fill="#5A6E65" fontSize="12">Policy remediation: +5 pts</text>
+        </g>
+
+        {/* Card 3: Administrative Credit */}
+        <g transform="translate(30, 260)" filter="url(#flowCardShadow)">
+          <rect x="0" y="0" width="240" height="76" rx="12" fill="#FFFFFF" stroke="#DCE7E1" strokeWidth="1.5" />
+          <circle cx="34" cy="38" r="20" fill="#E4F2EC" />
+          <text x="34" y="44" textAnchor="middle" fill="#26745C" fontSize="18" fontWeight="700">⚡</text>
+          <text x="66" y="34" fill="#182A25" fontSize="14" fontWeight="700">Administrative Credit</text>
+          <text x="66" y="55" fill="#5A6E65" fontSize="12">Audited override: +1-50 pts</text>
+        </g>
+
+        {/* ================= CENTER CIRCULAR TRUST GAUGE ================= */}
+        <g transform="translate(530, 180)" filter="url(#flowCardShadow)">
+          <circle cx="0" cy="0" r="82" fill="#FFFFFF" stroke="#DCE7E1" strokeWidth="2" />
+          {/* Background track */}
+          <circle cx="0" cy="0" r="66" fill="none" stroke="#E4F2EC" strokeWidth="10" />
+          {/* Progress arc */}
+          <circle
+            cx="0"
+            cy="0"
+            r="66"
+            fill="none"
+            stroke={levelColor}
+            strokeWidth="10"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            transform="rotate(-90 0 0)"
+          />
+          {/* Score & Labels */}
+          <text x="0" y="-4" textAnchor="middle" fill="#182A25" fontSize="44" fontWeight="800">
+            {numericScore}
+          </text>
+          <text x="0" y="20" textAnchor="middle" fill={levelColor} fontSize="13" fontWeight="700" letterSpacing="0.08em">
+            {levelText}
+          </text>
+          <text x="0" y="36" textAnchor="middle" fill="#6C7D76" fontSize="10.5">
+            Score Ceiling: 100
+          </text>
+        </g>
+
+        {/* ================= RIGHT CARDS (Penalties & Escalation) ================= */}
+        {/* Card 1: Excessive Access */}
+        <g transform="translate(790, 24)" filter="url(#flowCardShadow)">
+          <rect x="0" y="0" width="240" height="76" rx="12" fill="#FFFFFF" stroke="#FDE68A" strokeWidth="1.5" />
+          <circle cx="34" cy="38" r="20" fill="#FEF3C7" />
+          <text x="34" y="46" textAnchor="middle" fill="#D99A32" fontSize="22" fontWeight="800">–</text>
+          <text x="66" y="34" fill="#182A25" fontSize="14" fontWeight="700">Excessive Access</text>
+          <text x="66" y="55" fill="#5A6E65" fontSize="12">&gt;10 req/min: -15 pts</text>
+        </g>
+
+        {/* Card 2: Repeated Violation */}
+        <g transform="translate(790, 142)" filter="url(#flowCardShadow)">
+          <rect x="0" y="0" width="240" height="76" rx="12" fill="#FFFFFF" stroke="#FECACA" strokeWidth="1.5" />
+          <circle cx="34" cy="38" r="20" fill="#FEE2E2" />
+          <text x="34" y="44" textAnchor="middle" fill="#C94B4B" fontSize="18" fontWeight="800">!</text>
+          <text x="66" y="34" fill="#182A25" fontSize="14" fontWeight="700">Repeated Violation</text>
+          <text x="66" y="55" fill="#5A6E65" fontSize="12">1.5x Multiplier Escalation</text>
+        </g>
+
+        {/* Card 3: Unauthorized Resource */}
+        <g transform="translate(790, 260)" filter="url(#flowCardShadow)">
+          <rect x="0" y="0" width="240" height="76" rx="12" fill="#FFFFFF" stroke="#FECACA" strokeWidth="1.5" />
+          <circle cx="34" cy="38" r="20" fill="#FEE2E2" />
+          <text x="34" y="45" textAnchor="middle" fill="#C94B4B" fontSize="19" fontWeight="800">×</text>
+          <text x="66" y="34" fill="#182A25" fontSize="14" fontWeight="700">Unauthorized Resource</text>
+          <text x="66" y="55" fill="#5A6E65" fontSize="12">Disabled access: -8 pts</text>
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+

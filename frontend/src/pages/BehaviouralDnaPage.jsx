@@ -25,7 +25,7 @@ import StatCard from '../components/common/StatCard.jsx';
 import StatusBadge from '../components/common/StatusBadge.jsx';
 import TrustRing from '../components/common/TrustRing.jsx';
 import { ResourceIcon } from '../components/common/AppIcon.jsx';
-import { ResourceBaselineChart } from '../components/charts/SecurityCharts.jsx';
+import { DnaThreatModelGraph, ResourceBaselineChart } from '../components/charts/SecurityCharts.jsx';
 import { formatDate } from '../utils/formatters.js';
 
 const PATTERN_META = {
@@ -304,51 +304,58 @@ export function BehaviouralDnaPage({ apps = [], onNotify }) {
         </div>
 
         <div className="stack">
-          <Panel title="Multi-factor drift formulation" eyebrow="Heuristic weighting model">
-            <p className="panel-note">
-              E.D.I.T.H. derives a composite behavioral deviation score (0–100) using deterministic heuristic rules—not black-box ML—comparing current requests against established baselines.
-            </p>
+          <Panel title="DNA Detection Architecture & Threat Model" eyebrow="Heuristic telemetry gate">
+            <DnaThreatModelGraph />
 
-            <div className="dna-weight-bars">
-              <div className="weight-item">
-                <div className="weight-meta">
-                  <strong>Resource Shift</strong>
-                  <span>{weights.RESOURCE_SHIFT}% Weight</span>
-                </div>
-                <div className="progress-track">
-                  <div className="progress-bar progress-danger" style={{ width: `${weights.RESOURCE_SHIFT}%` }} />
-                </div>
-                <small>Accessing unexpected or historically dormant permissions</small>
-              </div>
-
-              <div className="weight-item">
-                <div className="weight-meta">
-                  <strong>Velocity &amp; Frequency Spike</strong>
-                  <span>{weights.FREQUENCY_SPIKE}% Weight</span>
-                </div>
-                <div className="progress-track">
-                  <div className="progress-bar progress-warning" style={{ width: `${weights.FREQUENCY_SPIKE}%` }} />
-                </div>
-                <small>Bursts occurring at &gt;{BEHAVIOURAL_DNA_CONFIG.FREQUENCY_SPIKE_RATIO.toFixed(1)}x above rolling hourly baseline</small>
-              </div>
-
-              <div className="weight-item">
-                <div className="weight-meta">
-                  <strong>Interval &amp; Timing Anomalies</strong>
-                  <span>{weights.UNUSUAL_TIMING}% Weight</span>
-                </div>
-                <div className="progress-track">
-                  <div className="progress-bar progress-info" style={{ width: `${weights.UNUSUAL_TIMING}%` }} />
-                </div>
-                <small>Rapid-fire bursts below {BEHAVIOURAL_DNA_CONFIG.BURST_BURST_MAX_INTERVAL_MS}ms inter-request interval</small>
-              </div>
-            </div>
-
-            <div className="callout callout-mint">
-              <strong>Zero-Drift Enforcement Gate</strong>
-              <p>
-                When composite deviation reaches {BEHAVIOURAL_DNA_CONFIG.SCORE_THRESHOLD}/100, Runtime Guard flags <code>BEHAVIOURAL_DRIFT</code>, emits a High severity alert, and enforces block rules in Protect/Strict modes.
+            <div className="info-block" style={{ marginTop: '16px' }}>
+              <h4 style={{ margin: '0 0 6px', fontSize: '13.5px', fontWeight: '700', color: 'var(--forest-900)' }}>
+                Multi-Factor Drift Formulation
+              </h4>
+              <p className="panel-note" style={{ margin: '0 0 14px' }}>
+                EDITH derives a composite behavioral deviation metric by evaluating current runtime telemetry against established historical baselines.
               </p>
+
+              <div className="dna-weight-bars">
+                <div className="weight-item">
+                  <div className="weight-meta">
+                    <strong>Resource Shift</strong>
+                    <span>{weights.RESOURCE_SHIFT}% Weight</span>
+                  </div>
+                  <div className="progress-track">
+                    <div className="progress-bar progress-danger" style={{ width: `${weights.RESOURCE_SHIFT}%` }} />
+                  </div>
+                  <small>Accessing unexpected or historically dormant permissions</small>
+                </div>
+
+                <div className="weight-item">
+                  <div className="weight-meta">
+                    <strong>Velocity &amp; Frequency Spike</strong>
+                    <span>{weights.FREQUENCY_SPIKE}% Weight</span>
+                  </div>
+                  <div className="progress-track">
+                    <div className="progress-bar progress-warning" style={{ width: `${weights.FREQUENCY_SPIKE}%` }} />
+                  </div>
+                  <small>Bursts occurring at &gt;{BEHAVIOURAL_DNA_CONFIG.FREQUENCY_SPIKE_RATIO.toFixed(1)}x above rolling hourly baseline</small>
+                </div>
+
+                <div className="weight-item">
+                  <div className="weight-meta">
+                    <strong>Interval &amp; Timing Anomalies</strong>
+                    <span>{weights.UNUSUAL_TIMING}% Weight</span>
+                  </div>
+                  <div className="progress-track">
+                    <div className="progress-bar progress-info" style={{ width: `${weights.UNUSUAL_TIMING}%` }} />
+                  </div>
+                  <small>Rapid-fire bursts below {BEHAVIOURAL_DNA_CONFIG.BURST_BURST_MAX_INTERVAL_MS}ms inter-request interval</small>
+                </div>
+              </div>
+
+              <div className="callout callout-mint" style={{ marginTop: '16px' }}>
+                <strong>Zero-Drift Enforcement Policy</strong>
+                <p>
+                  When composite deviation reaches {BEHAVIOURAL_DNA_CONFIG.SCORE_THRESHOLD}/100, Runtime Guard flags <code>BEHAVIOURAL_DRIFT</code>, emits a High severity alert, and enforces access throttling in Protect and Strict modes.
+                </p>
+              </div>
             </div>
           </Panel>
 

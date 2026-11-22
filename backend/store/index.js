@@ -1,6 +1,6 @@
 // M1 In-Memory Store for E.D.I.T.H.
 import seedData from '../data/seedData.js';
-import { trustLevelFor, GUARD_MODES, DEFAULT_GUARD_MODE } from '../../shared/contracts.js';
+import { trustLevelFor, GUARD_MODES, DEFAULT_GUARD_MODE, ADAPTIVE_TRUST_CONFIG } from '../../shared/contracts.js';
 
 function initialGuardMode() {
   const env = process.env.RUNTIME_GUARD_MODE;
@@ -24,6 +24,15 @@ class DataStore {
     this.counters = JSON.parse(JSON.stringify(seed.counters));
     this.guardMode = initialGuardMode();
     this.guardDecisions = [];
+    this.adaptiveConfig = {
+      escalationEnabled: true,
+      escalationMultiplier: ADAPTIVE_TRUST_CONFIG.REPEATED_VIOLATION.ESCALATION_MULTIPLIER,
+      cleanStreakThreshold: ADAPTIVE_TRUST_CONFIG.RECOVERY.CLEAN_STREAK_THRESHOLD,
+      cleanStreakBonus: ADAPTIVE_TRUST_CONFIG.RECOVERY.CLEAN_STREAK_BONUS,
+      maxRecoveryCeiling: ADAPTIVE_TRUST_CONFIG.RECOVERY.MAX_RECOVERY_CEILING,
+      autoRecoveryOnRecommendation: true,
+    };
+    this.baselines = {};
     this._mockClock = null;
     return this.getState();
   }
@@ -249,6 +258,35 @@ class DataStore {
     if (filter.appId) list = list.filter((t) => t.appId === filter.appId);
     if (filter.limit) list = list.slice(0, filter.limit);
     return list;
+  }
+
+  getAdaptiveConfig() {
+    return { ...this.adaptiveConfig };
+  }
+
+  updateAdaptiveConfig(patch = {}) {
+    this.adaptiveConfig = { ...this.adaptiveConfig, ...patch };
+    return { ...this.adaptiveConfig };
+  }
+
+  getBaseline(appId, resource) {
+    if (!this.baselines) this.baselines = {};
+    return this.baselines[`${appId}:${resource}`] || null;
+  }
+
+  updateBaseline(appId, resource, baseline) {
+    if (!this.baselines) this.baselines = {};
+    const key = `${appId}:${resource}`;
+    this.baselines[key] = { ...this.baselines[key], ...baseline };
+    return this.baselines[key];
+  }
+
+  getBaselines(appId = null) {
+    if (!this.baselines) this.baselines = {};
+    if (appId) {
+      return Object.values(this.baselines).filter((b) => b.appId === appId);
+    }
+    return Object.values(this.baselines);
   }
 }
 

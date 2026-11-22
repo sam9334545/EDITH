@@ -22,7 +22,7 @@ import ProductIllustration from '../components/common/ProductIllustration.jsx';
 import StatCard from '../components/common/StatCard.jsx';
 import StatusBadge from '../components/common/StatusBadge.jsx';
 import TrustRing from '../components/common/TrustRing.jsx';
-import { TrustTrajectoryChart } from '../components/charts/SecurityCharts.jsx';
+import { AdaptiveTrustFlowChart, TrustTrajectoryChart } from '../components/charts/SecurityCharts.jsx';
 import { formatDate, humanize } from '../utils/formatters.js';
 
 const RISK_BADGES = {
@@ -138,6 +138,7 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
   };
 
   const risk = RISK_BADGES[profile?.riskCategory] || RISK_BADGES.low_risk;
+  const selectedApp = apps.find((a) => a.id === selectedAppId);
   const comparedApps = useMemo(
     () => apps.slice().sort((a, b) => (a.trustScore ?? 101) - (b.trustScore ?? 101)).slice(0, 8),
     [apps],
@@ -179,19 +180,23 @@ export function AdaptiveTrustPage({ apps = [], onNotify }) {
         )}
       />
 
-      <div className="split-intro-banner">
-        <div className="split-intro-copy">
-          <span className="eyebrow">Continuous Trust Calibration</span>
-          <h2>Escalation &amp; Recovery Mechanics</h2>
-          <p>
-            Every security signal deducts deterministic severity points bounded between 0 and {effectiveConfig.maxRecoveryCeiling}. Repeated alerts within a 5-minute window trigger escalation weighting, while {effectiveConfig.cleanStreakThreshold} consecutive permitted operations or verified remediation credits progressively rebuild trust.
-          </p>
+      <div className="adaptive-flowchart-card">
+        <div className="adaptive-flowchart-header">
+          <div className="header-left">
+            <span className="eyebrow">CONTINUOUS TRUST EVALUATION ENGINE</span>
+            <h3>Dynamic Trust Scoring &amp; Progressive Recovery Architecture</h3>
+            <p>
+              Unlike static access control, E.D.I.T.H. calculates real-time trust trajectories across permitted calls, behavioral deviations, and remediation actions.
+            </p>
+          </div>
+          <span className="badge badge-success">MATHEMATICAL MODEL ACTIVE</span>
         </div>
-        <ProductIllustration
-          src="/assets/adaptive-trust-engine.webp"
-          alt="Central circular trust gauge receiving positive green recovery trajectories and negative stepped amber-crimson escalation penalties"
-          variant="compact"
-        />
+        <div className="adaptive-flowchart-wrap">
+          <AdaptiveTrustFlowChart
+            score={profile?.currentScore ?? selectedApp?.trustScore ?? 84}
+            level={profile?.level || 'high'}
+          />
+        </div>
       </div>
 
       <div className="kpi-grid kpi-grid-4">
