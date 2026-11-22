@@ -597,7 +597,7 @@ export function DnaThreatModelGraph() {
 
 export function AdaptiveTrustFlowChart({ score = 84, level = 'high' }) {
   const numericScore = Math.max(0, Math.min(100, Math.round(Number(score) || 84)));
-  const circumference = 2 * Math.PI * 92; // ~578.05
+  const circumference = 2 * Math.PI * 78; // ~490.09
   const strokeDashoffset = circumference * (1 - numericScore / 100);
 
   const levelColor = numericScore >= 75 ? '#26745C' : numericScore >= 50 ? '#D99A32' : '#C94B4B';
@@ -606,216 +606,174 @@ export function AdaptiveTrustFlowChart({ score = 84, level = 'high' }) {
   return (
     <div className="adaptive-flowchart-svg-wrap" aria-label="Adaptive trust scoring continuous evaluation flow">
       <svg
-        viewBox="0 0 1200 460"
+        viewBox="0 0 1200 440"
         className="svg-chart"
         role="img"
         aria-label="Adaptive trust dynamic scoring architecture flowchart"
       >
         <defs>
-          {/* High-visibility flow markers */}
-          <marker id="flowArrowGreen" viewBox="0 0 14 14" refX="10" refY="7" markerWidth="9" markerHeight="9" orient="auto">
-            <path d="M 0 2 L 12 7 L 0 12 z" fill="#26745C" />
+          {/* Clean crisp flow markers */}
+          <marker id="flowArrowGreen" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+            <path d="M 1 2 L 10 6 L 1 10 z" fill="#26745C" />
           </marker>
-          <marker id="flowArrowAmber" viewBox="0 0 14 14" refX="10" refY="7" markerWidth="9" markerHeight="9" orient="auto">
-            <path d="M 0 2 L 12 7 L 0 12 z" fill="#D99A32" />
+          <marker id="flowArrowAmber" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+            <path d="M 1 2 L 10 6 L 1 10 z" fill="#D99A32" />
           </marker>
-          <marker id="flowArrowRed" viewBox="0 0 14 14" refX="10" refY="7" markerWidth="9" markerHeight="9" orient="auto">
-            <path d="M 0 2 L 12 7 L 0 12 z" fill="#C94B4B" />
+          <marker id="flowArrowRed" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+            <path d="M 1 2 L 10 6 L 1 10 z" fill="#C94B4B" />
           </marker>
           <filter id="flowCardShadow" x="-10%" y="-10%" width="125%" height="135%">
-            <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#123D32" floodOpacity="0.08" />
+            <feDropShadow dx="0" dy="3" stdDeviation="5" floodColor="#123D32" floodOpacity="0.07" />
           </filter>
         </defs>
 
         {/* ================= FLOW CONNECTORS ================= */}
-        {/* Left Side: Positive Rebuilding connectors into Center Gauge */}
-        {/* Card 1 (Streak) -> Center Top-Left */}
+        {/* Left Side: Positive Rebuilding paths flowing cleanly into Center Gauge */}
+        {/* Top-Left (Streak) -> Center Gauge Upper-Left */}
         <path
-          d="M 350 74 C 440 74, 465 125, 498 152"
+          d="M 340 75 C 425 75, 465 115, 514 156"
           fill="none"
           stroke="#26745C"
-          strokeWidth="3.2"
-          strokeDasharray="7 5"
+          strokeWidth="3"
+          strokeDasharray="6 4"
           markerEnd="url(#flowArrowGreen)"
         />
-        {/* Pill Badge on Card 1 path */}
-        <g transform="translate(415, 88)">
-          <rect x="0" y="0" width="56" height="22" rx="11" fill="#E4F2EC" stroke="#26745C" strokeWidth="1" />
-          <text x="28" y="15" textAnchor="middle" fill="#26745C" fontSize="11" fontWeight="800">+2 pts</text>
-        </g>
 
-        {/* Card 2 (Corrective) -> Center Middle-Left */}
+        {/* Middle-Left (Corrective Action) -> Center Gauge Mid-Left */}
         <path
-          d="M 350 230 C 400 230, 440 230, 482 230"
+          d="M 340 220 C 390 220, 440 220, 496 220"
           fill="none"
           stroke="#26745C"
-          strokeWidth="3.2"
-          strokeDasharray="7 5"
+          strokeWidth="3"
+          strokeDasharray="6 4"
           markerEnd="url(#flowArrowGreen)"
         />
-        {/* Pill Badge on Card 2 path */}
-        <g transform="translate(398, 206)">
-          <rect x="0" y="0" width="56" height="22" rx="11" fill="#E4F2EC" stroke="#26745C" strokeWidth="1" />
-          <text x="28" y="15" textAnchor="middle" fill="#26745C" fontSize="11" fontWeight="800">+5 pts</text>
-        </g>
 
-        {/* Card 3 (Admin Credit) -> Center Bottom-Left */}
+        {/* Bottom-Left (Admin Credit) -> Center Gauge Lower-Left */}
         <path
-          d="M 350 386 C 440 386, 465 335, 498 308"
+          d="M 340 365 C 425 365, 465 325, 514 284"
           fill="none"
           stroke="#26745C"
-          strokeWidth="3.2"
-          strokeDasharray="7 5"
+          strokeWidth="3"
+          strokeDasharray="6 4"
           markerEnd="url(#flowArrowGreen)"
         />
-        {/* Pill Badge on Card 3 path */}
-        <g transform="translate(412, 350)">
-          <rect x="0" y="0" width="62" height="22" rx="11" fill="#E4F2EC" stroke="#26745C" strokeWidth="1" />
-          <text x="31" y="15" textAnchor="middle" fill="#26745C" fontSize="11" fontWeight="800">+Override</text>
-        </g>
 
-        {/* Right Side: Penalties & Degradation connectors from Right Cards to Center Gauge */}
-        {/* Card 1 (Excessive) -> Center Top-Right */}
+        {/* Right Side: Penalties & Degradation paths flowing cleanly from Right Cards to Center Gauge */}
+        {/* Top-Right (Excessive Access) -> Center Gauge Upper-Right */}
         <path
-          d="M 850 74 C 760 74, 735 125, 702 152"
+          d="M 860 75 C 775 75, 735 115, 686 156"
           fill="none"
           stroke="#D99A32"
-          strokeWidth="3.2"
-          strokeDasharray="7 5"
+          strokeWidth="3"
+          strokeDasharray="6 4"
           markerEnd="url(#flowArrowAmber)"
         />
-        {/* Pill Badge on Card 1 path */}
-        <g transform="translate(730, 88)">
-          <rect x="0" y="0" width="58" height="22" rx="11" fill="#FEF3C7" stroke="#D99A32" strokeWidth="1" />
-          <text x="29" y="15" textAnchor="middle" fill="#B45309" fontSize="11" fontWeight="800">-15 pts</text>
-        </g>
 
-        {/* Card 2 (Repeated Violation) -> Center Middle-Right */}
+        {/* Middle-Right (Repeated Violation) -> Center Gauge Mid-Right */}
         <path
-          d="M 850 230 C 800 230, 760 230, 718 230"
+          d="M 860 220 C 810 220, 760 220, 704 220"
           fill="none"
           stroke="#C94B4B"
-          strokeWidth="3.2"
-          strokeDasharray="7 5"
+          strokeWidth="3"
+          strokeDasharray="6 4"
           markerEnd="url(#flowArrowRed)"
         />
-        {/* Pill Badge on Card 2 path */}
-        <g transform="translate(745, 206)">
-          <rect x="0" y="0" width="56" height="22" rx="11" fill="#FEE2E2" stroke="#C94B4B" strokeWidth="1" />
-          <text x="28" y="15" textAnchor="middle" fill="#C94B4B" fontSize="11" fontWeight="800">x1.5</text>
-        </g>
 
-        {/* Card 3 (Unauthorized Resource) -> Center Bottom-Right */}
+        {/* Bottom-Right (Unauthorized Resource) -> Center Gauge Lower-Right */}
         <path
-          d="M 850 386 C 760 386, 735 335, 702 308"
+          d="M 860 365 C 775 365, 735 325, 686 284"
           fill="none"
           stroke="#C94B4B"
-          strokeWidth="3.2"
-          strokeDasharray="7 5"
+          strokeWidth="3"
+          strokeDasharray="6 4"
           markerEnd="url(#flowArrowRed)"
         />
-        {/* Pill Badge on Card 3 path */}
-        <g transform="translate(730, 350)">
-          <rect x="0" y="0" width="58" height="22" rx="11" fill="#FEE2E2" stroke="#C94B4B" strokeWidth="1" />
-          <text x="29" y="15" textAnchor="middle" fill="#C94B4B" fontSize="11" fontWeight="800">-8 pts</text>
-        </g>
 
         {/* ================= LEFT CARDS (Positive Rebuilding) ================= */}
         {/* Card 1: Clean Usage Streak */}
-        <g transform="translate(30, 25)" filter="url(#flowCardShadow)">
-          <rect x="0" y="0" width="320" height="98" rx="16" fill="#FFFFFF" stroke="#D2E3DA" strokeWidth="2" />
-          <circle cx="44" cy="49" r="26" fill="#E4F2EC" />
-          <text x="44" y="58" textAnchor="middle" fill="#26745C" fontSize="28" fontWeight="800">+</text>
-          <text x="84" y="42" fill="#123D32" fontSize="17" fontWeight="700">Clean Usage Streak</text>
-          <text x="84" y="68" fill="#5A6E65" fontSize="13">10 clean requests: +2 pts</text>
-          <rect x="232" y="18" width="74" height="24" rx="12" fill="#EAF6F0" stroke="#BFE0D1" strokeWidth="1" />
-          <text x="269" y="34" textAnchor="middle" fill="#26745C" fontSize="11.5" fontWeight="700">+2 PTS</text>
+        <g transform="translate(40, 31)" filter="url(#flowCardShadow)">
+          <rect x="0" y="0" width="300" height="88" rx="14" fill="#FFFFFF" stroke="#D2E3DA" strokeWidth="1.8" />
+          <circle cx="40" cy="44" r="22" fill="#E4F2EC" />
+          <text x="40" y="52" textAnchor="middle" fill="#26745C" fontSize="24" fontWeight="800">+</text>
+          <text x="74" y="38" fill="#123D32" fontSize="16" fontWeight="700">Clean Usage Streak</text>
+          <text x="74" y="62" fill="#5A6E65" fontSize="13" fontWeight="500">10 clean requests: +2 pts</text>
         </g>
 
         {/* Card 2: Corrective Action */}
-        <g transform="translate(30, 181)" filter="url(#flowCardShadow)">
-          <rect x="0" y="0" width="320" height="98" rx="16" fill="#FFFFFF" stroke="#D2E3DA" strokeWidth="2" />
-          <circle cx="44" cy="49" r="26" fill="#E4F2EC" />
-          <text x="44" y="56" textAnchor="middle" fill="#26745C" fontSize="24" fontWeight="800">✓</text>
-          <text x="84" y="42" fill="#123D32" fontSize="17" fontWeight="700">Corrective Action</text>
-          <text x="84" y="68" fill="#5A6E65" fontSize="13">Policy remediation: +5 pts</text>
-          <rect x="232" y="18" width="74" height="24" rx="12" fill="#EAF6F0" stroke="#BFE0D1" strokeWidth="1" />
-          <text x="269" y="34" textAnchor="middle" fill="#26745C" fontSize="11.5" fontWeight="700">+5 PTS</text>
+        <g transform="translate(40, 176)" filter="url(#flowCardShadow)">
+          <rect x="0" y="0" width="300" height="88" rx="14" fill="#FFFFFF" stroke="#D2E3DA" strokeWidth="1.8" />
+          <circle cx="40" cy="44" r="22" fill="#E4F2EC" />
+          <text x="40" y="51" textAnchor="middle" fill="#26745C" fontSize="20" fontWeight="800">✓</text>
+          <text x="74" y="38" fill="#123D32" fontSize="16" fontWeight="700">Corrective Action</text>
+          <text x="74" y="62" fill="#5A6E65" fontSize="13" fontWeight="500">Policy remediation: +5 pts</text>
         </g>
 
         {/* Card 3: Administrative Credit */}
-        <g transform="translate(30, 337)" filter="url(#flowCardShadow)">
-          <rect x="0" y="0" width="320" height="98" rx="16" fill="#FFFFFF" stroke="#D2E3DA" strokeWidth="2" />
-          <circle cx="44" cy="49" r="26" fill="#E4F2EC" />
-          <text x="44" y="57" textAnchor="middle" fill="#26745C" fontSize="24" fontWeight="800">⚡</text>
-          <text x="84" y="42" fill="#123D32" fontSize="17" fontWeight="700">Administrative Credit</text>
-          <text x="84" y="68" fill="#5A6E65" fontSize="13">Audited override: +1–50 pts</text>
-          <rect x="232" y="18" width="74" height="24" rx="12" fill="#EAF6F0" stroke="#BFE0D1" strokeWidth="1" />
-          <text x="269" y="34" textAnchor="middle" fill="#26745C" fontSize="11.5" fontWeight="700">+RESTORE</text>
+        <g transform="translate(40, 321)" filter="url(#flowCardShadow)">
+          <rect x="0" y="0" width="300" height="88" rx="14" fill="#FFFFFF" stroke="#D2E3DA" strokeWidth="1.8" />
+          <circle cx="40" cy="44" r="22" fill="#E4F2EC" />
+          <text x="40" y="51" textAnchor="middle" fill="#26745C" fontSize="20" fontWeight="800">⚡</text>
+          <text x="74" y="38" fill="#123D32" fontSize="16" fontWeight="700">Administrative Credit</text>
+          <text x="74" y="62" fill="#5A6E65" fontSize="13" fontWeight="500">Audited override: +1–50 pts</text>
         </g>
 
         {/* ================= CENTER CIRCULAR TRUST GAUGE ================= */}
-        <g transform="translate(600, 230)" filter="url(#flowCardShadow)">
-          <circle cx="0" cy="0" r="112" fill="#FFFFFF" stroke="#CFE2D8" strokeWidth="2.5" />
+        <g transform="translate(600, 220)" filter="url(#flowCardShadow)">
+          <circle cx="0" cy="0" r="98" fill="#FFFFFF" stroke="#CFE2D8" strokeWidth="2.5" />
           {/* Background track */}
-          <circle cx="0" cy="0" r="92" fill="none" stroke="#E4F2EC" strokeWidth="14" />
+          <circle cx="0" cy="0" r="78" fill="none" stroke="#E4F2EC" strokeWidth="12" />
           {/* Progress arc */}
           <circle
             cx="0"
             cy="0"
-            r="92"
+            r="78"
             fill="none"
             stroke={levelColor}
-            strokeWidth="14"
+            strokeWidth="12"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
             transform="rotate(-90 0 0)"
           />
           {/* Score & Labels */}
-          <text x="0" y="-10" textAnchor="middle" fill="#123D32" fontSize="62" fontWeight="900">
+          <text x="0" y="-8" textAnchor="middle" fill="#123D32" fontSize="54" fontWeight="900">
             {numericScore}
           </text>
-          <text x="0" y="24" textAnchor="middle" fill={levelColor} fontSize="16" fontWeight="800" letterSpacing="0.08em">
+          <text x="0" y="22" textAnchor="middle" fill={levelColor} fontSize="14" fontWeight="800" letterSpacing="0.08em">
             {levelText}
           </text>
-          <text x="0" y="47" textAnchor="middle" fill="#6C7D76" fontSize="13" fontWeight="600">
+          <text x="0" y="42" textAnchor="middle" fill="#6C7D76" fontSize="12" fontWeight="600">
             Score Ceiling: 100
           </text>
         </g>
 
         {/* ================= RIGHT CARDS (Penalties & Escalation) ================= */}
         {/* Card 1: Excessive Access */}
-        <g transform="translate(850, 25)" filter="url(#flowCardShadow)">
-          <rect x="0" y="0" width="320" height="98" rx="16" fill="#FFFFFF" stroke="#FDE68A" strokeWidth="2" />
-          <circle cx="44" cy="49" r="26" fill="#FEF3C7" />
-          <text x="44" y="59" textAnchor="middle" fill="#D99A32" fontSize="30" fontWeight="900">–</text>
-          <text x="84" y="42" fill="#182A25" fontSize="17" fontWeight="700">Excessive Access</text>
-          <text x="84" y="68" fill="#5A6E65" fontSize="13">&gt;10 req/min: -15 pts</text>
-          <rect x="232" y="18" width="74" height="24" rx="12" fill="#FEF3C7" stroke="#FCD34D" strokeWidth="1" />
-          <text x="269" y="34" textAnchor="middle" fill="#B45309" fontSize="11.5" fontWeight="700">-15 PTS</text>
+        <g transform="translate(860, 31)" filter="url(#flowCardShadow)">
+          <rect x="0" y="0" width="300" height="88" rx="14" fill="#FFFFFF" stroke="#FDE68A" strokeWidth="1.8" />
+          <circle cx="40" cy="44" r="22" fill="#FEF3C7" />
+          <text x="40" y="53" textAnchor="middle" fill="#D99A32" fontSize="26" fontWeight="900">–</text>
+          <text x="74" y="38" fill="#182A25" fontSize="16" fontWeight="700">Excessive Access</text>
+          <text x="74" y="62" fill="#5A6E65" fontSize="13" fontWeight="500">&gt;10 req/min: -15 pts</text>
         </g>
 
         {/* Card 2: Repeated Violation */}
-        <g transform="translate(850, 181)" filter="url(#flowCardShadow)">
-          <rect x="0" y="0" width="320" height="98" rx="16" fill="#FFFFFF" stroke="#FECACA" strokeWidth="2" />
-          <circle cx="44" cy="49" r="26" fill="#FEE2E2" />
-          <text x="44" y="57" textAnchor="middle" fill="#C94B4B" fontSize="24" fontWeight="900">!</text>
-          <text x="84" y="42" fill="#182A25" fontSize="17" fontWeight="700">Repeated Violation</text>
-          <text x="84" y="68" fill="#5A6E65" fontSize="13">1.5x Multiplier Escalation</text>
-          <rect x="232" y="18" width="74" height="24" rx="12" fill="#FEE2E2" stroke="#FCA5A5" strokeWidth="1" />
-          <text x="269" y="34" textAnchor="middle" fill="#C94B4B" fontSize="11.5" fontWeight="700">x1.5</text>
+        <g transform="translate(860, 176)" filter="url(#flowCardShadow)">
+          <rect x="0" y="0" width="300" height="88" rx="14" fill="#FFFFFF" stroke="#FECACA" strokeWidth="1.8" />
+          <circle cx="40" cy="44" r="22" fill="#FEE2E2" />
+          <text x="40" y="51" textAnchor="middle" fill="#C94B4B" fontSize="20" fontWeight="900">!</text>
+          <text x="74" y="38" fill="#182A25" fontSize="16" fontWeight="700">Repeated Violation</text>
+          <text x="74" y="62" fill="#5A6E65" fontSize="13" fontWeight="500">1.5x Multiplier Escalation</text>
         </g>
 
         {/* Card 3: Unauthorized Resource */}
-        <g transform="translate(850, 337)" filter="url(#flowCardShadow)">
-          <rect x="0" y="0" width="320" height="98" rx="16" fill="#FFFFFF" stroke="#FECACA" strokeWidth="2" />
-          <circle cx="44" cy="49" r="26" fill="#FEE2E2" />
-          <text x="44" y="58" textAnchor="middle" fill="#C94B4B" fontSize="24" fontWeight="900">×</text>
-          <text x="84" y="42" fill="#182A25" fontSize="17" fontWeight="700">Unauthorized Resource</text>
-          <text x="84" y="68" fill="#5A6E65" fontSize="13">Disabled access: -8 pts</text>
-          <rect x="232" y="18" width="74" height="24" rx="12" fill="#FEE2E2" stroke="#FCA5A5" strokeWidth="1" />
-          <text x="269" y="34" textAnchor="middle" fill="#C94B4B" fontSize="11.5" fontWeight="700">-8 PTS</text>
+        <g transform="translate(860, 321)" filter="url(#flowCardShadow)">
+          <rect x="0" y="0" width="300" height="88" rx="14" fill="#FFFFFF" stroke="#FECACA" strokeWidth="1.8" />
+          <circle cx="40" cy="44" r="22" fill="#FEE2E2" />
+          <text x="40" y="52" textAnchor="middle" fill="#C94B4B" fontSize="20" fontWeight="900">×</text>
+          <text x="74" y="38" fill="#182A25" fontSize="16" fontWeight="700">Unauthorized Resource</text>
+          <text x="74" y="62" fill="#5A6E65" fontSize="13" fontWeight="500">Disabled access: -8 pts</text>
         </g>
       </svg>
     </div>

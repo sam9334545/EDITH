@@ -1700,8 +1700,7 @@ code {
 .adaptive-flowchart-wrap .svg-chart {
   width: 100%;
   height: auto;
-  min-height: 420px;
-  max-height: 580px;
+  max-height: 520px;
   display: block;
 }
 
