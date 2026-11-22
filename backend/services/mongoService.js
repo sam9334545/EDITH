@@ -27,6 +27,7 @@ import { seedPostureDemoData } from './demoDataService.js';
 import { mongoose as dbMongoose } from '../database/connection.js';
 import { analyzeEvent } from './anomalyDetection.js';
 import { calculateTrustScore, changeReasonFor, penaltyFor, buildScoreExplanation } from './trustScore.js';
+import { store } from '../store/index.js';
 
 const objectId = (value) => new mongoose.Types.ObjectId(value);
 const idString = (value) => value?._id ? value._id.toString() : value?.toString?.() ?? null;
@@ -330,6 +331,17 @@ export async function processAccessRequest(payload) {
     } else {
       decision = { allowed: true, reason: 'ok' };
       permission.lastAccessedAt = timestamp;
+    }
+
+    if (store?.addGuardDecision) {
+      store.addGuardDecision({
+        appId: app.id,
+        resource: payload.resource,
+        decision: decision.allowed ? 'ALLOW' : 'BLOCK',
+        reason: decision.allowed ? 'Request permitted within least-privilege boundary' : (decision.reason === 'app_suspended' ? 'Target application is quarantined (suspended)' : 'Permission ungranted or disabled'),
+        policy: decision.allowed ? 'Least-privilege validated' : 'Zero-Trust RASP guard block',
+        timestamp: timestamp instanceof Date ? timestamp.toISOString() : new Date(timestamp).toISOString(),
+      });
     }
 
     const [event] = await Event.create([{
