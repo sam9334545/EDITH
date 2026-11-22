@@ -20,9 +20,32 @@
 
 ---
 
-## 📸 Platform Overview
+## 📸 Platform Overview & Core Engines Showcase
+
+### 1. Behavioral DNA Profiling & Heuristic Threat Model
+Continuous heuristic telemetry baseline and real-time behavioral drift detection model with velocity spike gates.
+
+![Behavioral DNA Engine](docs/screenshots/dna.png)
+
+### 2. Adaptive Trust Scoring & Dynamic Recovery Architecture
+Closed-loop trust evaluation engine with repeated-violation penalty multipliers, clean streak bonuses, and audited administrative recovery.
+
+![Adaptive Trust Engine](docs/screenshots/adaptive.png)
+
+### 3. Command & Security Posture Dashboard
+Unified CNAPP-inspired telemetry dashboard aggregating application risk scores, active entitlements, and allowed/denied volume cadence.
 
 ![E.D.I.T.H. Security Dashboard](docs/screenshots/dashboard.png)
+
+### 4. CNAPP Security Posture & Risk Analysis
+Risk-adjusted posture metrics, automated security findings, and policy compliance matrix.
+
+![CNAPP Security Posture](docs/screenshots/posture.png)
+
+### 5. Runtime Application Self-Protection (RASP) & Signal Register
+Deep runtime request inspection intercepting SQLi, Path Traversal, and RCE attacks in-flight.
+
+![Security Alerts Management](docs/screenshots/security.png)
 
 ---
 

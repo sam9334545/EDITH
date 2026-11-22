@@ -1,11 +1,15 @@
 import { useState } from 'react';
+import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useIncidentDetails } from '../hooks/useIncidents.js';
 import { incidentService } from '../services/incidentService.js';
 import { formatDate, humanize } from '../utils/formatters.js';
-import ErrorState from '../components/common/ErrorState.jsx';
 import EmptyState from '../components/common/EmptyState.jsx';
+import ErrorState from '../components/common/ErrorState.jsx';
 import LoadingState from '../components/common/LoadingState.jsx';
+import PageHeader from '../components/common/PageHeader.jsx';
 import Panel from '../components/common/Panel.jsx';
+import RiskBadge from '../components/common/RiskBadge.jsx';
+import StatusBadge from '../components/common/StatusBadge.jsx';
 import IncidentOverview from '../components/security/IncidentOverview.jsx';
 import IncidentTimeline from '../components/security/IncidentTimeline.jsx';
 
@@ -59,28 +63,49 @@ export default function IncidentDetails({ eventId, findingId, onBack, onNotify }
   }
 
   return (
-    <>
-      <header className="page-header">
-        <div><span className="eyebrow">Evidence-led explanation</span><h1>Incident details</h1>
-          <p>Incident and finding details are loaded from persisted events, alerts, findings, and trust history.</p></div>
-        <button type="button" className="button" onClick={onBack}>Back to findings</button>
-      </header>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Evidence-led security forensics"
+        title="Incident details"
+        description="Persisted event, linked posture finding, triggered rule explanation, trust score delta, and chronological timeline."
+        actions={(
+          <button type="button" className="button" onClick={onBack}>
+            <ArrowLeft size={14} aria-hidden="true" /> Back to findings
+          </button>
+        )}
+      />
+
       {loading && <LoadingState label="Loading persisted incident details" />}
       <ErrorState error={error} title="Incident details could not be loaded" />
       {!loading && !error && !incident && !finding && (
-        <EmptyState title="Incident details unavailable">No incident or finding identifier was supplied.</EmptyState>
+        <EmptyState title="Incident details unavailable">
+          No incident or finding identifier was supplied.
+        </EmptyState>
       )}
+
       {!loading && !error && finding && (
-        <Panel title={finding.title} eyebrow={`Finding · ${finding.id}`}>
-          <div className="incident-facts">
+        <Panel
+          title={finding.title}
+          eyebrow={`Finding · ${finding.id}`}
+          action={(
+            <div className="policy-badges">
+              <RiskBadge level={finding.severity} />
+              <StatusBadge tone={finding.status === 'resolved' ? 'success' : finding.status === 'acknowledged' ? 'muted' : 'warning'}>
+                {humanize(finding.status)}
+              </StatusBadge>
+            </div>
+          )}
+        >
+          <dl className="incident-facts">
             <div><dt>Severity</dt><dd>{humanize(finding.severity)}</dd></div>
             <div><dt>Current status</dt><dd>{humanize(finding.status)}</dd></div>
             <div><dt>Application</dt><dd>{finding.applicationName || finding.appId} · {finding.appId}</dd></div>
             <div><dt>Detected</dt><dd>{formatDate(finding.detectedAt)}</dd></div>
             <div><dt>Evidence</dt><dd>{finding.reason}</dd></div>
             <div><dt>Security rule</dt><dd>{finding.ruleId ? humanize(finding.ruleId) : 'Not recorded'}</dd></div>
-            <div><dt>Recommended remediation</dt><dd>{finding.recommendedAction}</dd></div>
-          </div>
+            <div className="fact-span-2"><dt>Recommended remediation</dt><dd>{finding.recommendedAction}</dd></div>
+          </dl>
+
           {finding.ruleId && policyMap.has(finding.ruleId) && (
             <div className="incident-rule-explanations">
               <h3>Rule explanation</h3>
@@ -88,15 +113,30 @@ export default function IncidentDetails({ eventId, findingId, onBack, onNotify }
               <p><strong>Condition:</strong> {policyMap.get(finding.ruleId).condition}</p>
             </div>
           )}
-          {canAcknowledge && <button className="button" disabled={working} onClick={() => updateStatus('acknowledge')}>Acknowledge finding</button>}
-          {canResolve && <button className="button button-primary" disabled={working} onClick={() => updateStatus('resolve')}>Resolve finding</button>}
+
+          <div className="incident-action-row">
+            {canAcknowledge && (
+              <button type="button" className="button" disabled={working} onClick={() => updateStatus('acknowledge')}>
+                Acknowledge finding
+              </button>
+            )}
+            {canResolve && (
+              <button type="button" className="button button-primary" disabled={working} onClick={() => updateStatus('resolve')}>
+                <CheckCircle2 size={14} aria-hidden="true" /> Resolve finding
+              </button>
+            )}
+          </div>
+
           {finding.relatedEventIds?.length > 0 && !incident && (
-            <p className="panel-note">A related access event exists, but incident details could not be loaded from the available event identifier.</p>
+            <p className="panel-note" style={{ marginTop: '12px' }}>
+              A related access event exists, but incident details could not be loaded from the available event identifier.
+            </p>
           )}
         </Panel>
       )}
+
       {!loading && !error && incident && (
-        <>
+        <div className="dashboard-grid posture-grid">
           <Panel title="Persisted incident" eyebrow={`Incident ID · ${incident.eventId}`}>
             <IncidentOverview incident={incident} />
             {incident.findings?.map((item) => {
@@ -109,17 +149,31 @@ export default function IncidentDetails({ eventId, findingId, onBack, onNotify }
                 </div>
               ) : null;
             })}
-            {canAcknowledge && <button className="button" disabled={working} onClick={() => updateStatus('acknowledge')}>Acknowledge linked record</button>}
-            {canResolve && <button className="button button-primary" disabled={working} onClick={() => updateStatus('resolve')}>Resolve finding</button>}
+            <div className="incident-action-row">
+              {canAcknowledge && (
+                <button type="button" className="button" disabled={working} onClick={() => updateStatus('acknowledge')}>
+                  Acknowledge linked record
+                </button>
+              )}
+              {canResolve && (
+                <button type="button" className="button button-primary" disabled={working} onClick={() => updateStatus('resolve')}>
+                  <CheckCircle2 size={14} aria-hidden="true" /> Resolve finding
+                </button>
+              )}
+            </div>
           </Panel>
-          <Panel title="Incident timeline" eyebrow="Persisted events in chronological order">
+
+          <Panel title="Incident timeline" eyebrow="Chronological persisted records">
             <IncidentTimeline items={timeline} />
           </Panel>
-        </>
+        </div>
       )}
+
       {!loading && !error && incident && !incident.findings?.length && !incident.alerts?.length && (
-        <p className="panel-note">No persisted finding or alert is linked to this incident; acknowledgement and resolution are unavailable.</p>
+        <p className="panel-note">
+          No persisted finding or alert is linked to this incident; acknowledgement and resolution are unavailable.
+        </p>
       )}
-    </>
+    </div>
   );
 }

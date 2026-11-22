@@ -90,6 +90,9 @@ export default function App() {
   return (
     <MainLayout
       page={page === 'application-details' ? 'applications' : page}
+      activePage={page}
+      activeAlerts={activeAlerts}
+      busy={busy}
       navigate={navigate} mobileNavOpen={mobileNavOpen}
       onToggleNavigation={() => setMobileNavOpen((open) => !open)}
       onRefresh={() => setRefreshKey((current) => current + 1)}
