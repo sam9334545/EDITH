@@ -93,7 +93,10 @@ app.use((error, req, res, next) => {
       ? 'Database is unavailable'
       : error.message;
 
-  if (status >= 500) console.error(`Request failed: ${error.name || 'Error'}`);
+  if (status >= 500) {
+    console.error(`Request failed (${status}): ${error.name || 'Error'}: ${error.message}`);
+    if (error.stack) console.error(error.stack);
+  }
   return res.status(status).json(fail(code, message));
 });
 

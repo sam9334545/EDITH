@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ACTIVITY_EVENT_TYPES, ALERT_TYPES } from '@shared/contracts.js';
+import { ACTIVITY_EVENT_TYPES, ALERT_TYPES, SUGGESTED_ACTIONS } from '@shared/contracts.js';
 import StatusBadge from './StatusBadge.jsx';
 
 export const RESOURCE_LABELS = {
@@ -29,7 +29,15 @@ export const ALERT_LABELS = {
   [ALERT_TYPES.SUSPENDED_APP_ACCESS]: 'Suspended application access',
   [ALERT_TYPES.REPEATED_RESTRICTED_ACCESS]: 'Repeated restricted access',
   [ALERT_TYPES.UNUSUAL_RESOURCE_COMBINATION]: 'Unusual resource combination',
+  [ALERT_TYPES.BEHAVIOURAL_ANOMALY]: 'Behavioral drift anomaly',
 };
+
+export const SUGGESTED_ACTION_LABELS = {
+  [SUGGESTED_ACTIONS.REVOKE_PERMISSION]: 'Revoke resource permission',
+  [SUGGESTED_ACTIONS.SUSPEND_APP]: 'Suspend application',
+  [SUGGESTED_ACTIONS.NONE]: 'Advisory / monitor only',
+};
+
 export function safeDecode(value) {
   try {
     return decodeURIComponent(value);
@@ -130,14 +138,14 @@ export function TextField({ label, value, onChange, ...props }) {
 }
 
 export function activityTone(type) {
-  if (type?.includes('denied') || type?.includes('revoked')) return 'danger';
+  if (type?.includes('denied') || type?.includes('revoked') || type?.includes('suspended')) return 'danger';
   if (type?.includes('alert')) return 'warning';
-  if (type?.includes('allowed') || type?.includes('granted')) return 'success';
+  if (type?.includes('allowed') || type?.includes('granted') || type?.includes('reactivated') || type?.includes('applied')) return 'success';
   return 'neutral';
 }
 
 export function humanize(value = '') {
-  return value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return String(value).replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export function ErrorBlock({ error, endpoint }) {
@@ -173,7 +181,7 @@ export function AlertRows({ alerts, apps, events, onAcknowledge, onView, busyId 
           <Button onClick={() => onView(alert)}>Details</Button>
           {alert.acknowledged
             ? <StatusBadge tone="muted">Acknowledged</StatusBadge>
-            : <Button disabled={busyId === alert.id} onClick={() => onAcknowledge(alert)}>Acknowledge</Button>}
+            : <Button variant="primary" disabled={busyId === alert.id} onClick={() => onAcknowledge(alert)}>Acknowledge</Button>}
         </div>
       </article>
     );

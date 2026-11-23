@@ -1,6 +1,6 @@
 // M1 In-Memory Store for E.D.I.T.H.
 import seedData from '../data/seedData.js';
-import { trustLevelFor, GUARD_MODES, DEFAULT_GUARD_MODE } from '../../shared/contracts.js';
+import { trustLevelFor, GUARD_MODES, DEFAULT_GUARD_MODE, ADAPTIVE_TRUST_CONFIG } from '../../shared/contracts.js';
 
 function initialGuardMode() {
   const env = process.env.RUNTIME_GUARD_MODE;
@@ -23,7 +23,71 @@ class DataStore {
     this.trustHistory = JSON.parse(JSON.stringify(seed.trustHistory));
     this.counters = JSON.parse(JSON.stringify(seed.counters));
     this.guardMode = initialGuardMode();
-    this.guardDecisions = [];
+    this.guardDecisions = [
+      {
+        decisionId: 'gd_0001',
+        appId: 'app_01',
+        resource: 'location',
+        decision: 'ALLOW',
+        reason: 'Legitimate GPS route recording within rate envelope',
+        policy: 'Baseline compliant',
+        timestamp: '2026-11-22T21:10:00.000Z',
+      },
+      {
+        decisionId: 'gd_0002',
+        appId: 'app_02',
+        resource: 'camera',
+        decision: 'ALLOW',
+        reason: 'Image search camera capture permitted by policy',
+        policy: 'Least-privilege permission verified',
+        timestamp: '2026-11-22T21:15:30.000Z',
+      },
+      {
+        decisionId: 'gd_0003',
+        appId: 'app_01',
+        resource: 'contacts',
+        decision: 'BLOCK',
+        reason: 'Unauthorized resource access intercepted: contacts permission ungranted',
+        policy: 'Zero-Trust strict sandbox enforcement',
+        timestamp: '2026-11-22T21:20:00.000Z',
+      },
+      {
+        decisionId: 'gd_0004',
+        appId: 'app_01',
+        resource: 'location',
+        decision: 'BLOCK',
+        reason: 'Velocity threshold violation (25 req/min) - High burst rate deviation',
+        policy: 'Anomaly Guard RASP trigger',
+        timestamp: '2026-11-22T21:22:15.000Z',
+      },
+      {
+        decisionId: 'gd_0005',
+        appId: 'app_01',
+        resource: 'location',
+        decision: 'BLOCK',
+        reason: 'Target application is in quarantined state (suspended)',
+        policy: 'Automated RASP application suspension active',
+        timestamp: '2026-11-22T21:25:00.000Z',
+      },
+      {
+        decisionId: 'gd_0006',
+        appId: 'app_04',
+        resource: 'location',
+        decision: 'ALLOW',
+        reason: 'Navigation map routing permitted by policy',
+        policy: 'Compliant with expected profile',
+        timestamp: '2026-11-22T21:30:00.000Z',
+      },
+    ];
+    this.adaptiveConfig = {
+      escalationEnabled: true,
+      escalationMultiplier: ADAPTIVE_TRUST_CONFIG.REPEATED_VIOLATION.ESCALATION_MULTIPLIER,
+      cleanStreakThreshold: ADAPTIVE_TRUST_CONFIG.RECOVERY.CLEAN_STREAK_THRESHOLD,
+      cleanStreakBonus: ADAPTIVE_TRUST_CONFIG.RECOVERY.CLEAN_STREAK_BONUS,
+      maxRecoveryCeiling: ADAPTIVE_TRUST_CONFIG.RECOVERY.MAX_RECOVERY_CEILING,
+      autoRecoveryOnRecommendation: true,
+    };
+    this.baselines = {};
     this._mockClock = null;
     return this.getState();
   }
@@ -249,6 +313,35 @@ class DataStore {
     if (filter.appId) list = list.filter((t) => t.appId === filter.appId);
     if (filter.limit) list = list.slice(0, filter.limit);
     return list;
+  }
+
+  getAdaptiveConfig() {
+    return { ...this.adaptiveConfig };
+  }
+
+  updateAdaptiveConfig(patch = {}) {
+    this.adaptiveConfig = { ...this.adaptiveConfig, ...patch };
+    return { ...this.adaptiveConfig };
+  }
+
+  getBaseline(appId, resource) {
+    if (!this.baselines) this.baselines = {};
+    return this.baselines[`${appId}:${resource}`] || null;
+  }
+
+  updateBaseline(appId, resource, baseline) {
+    if (!this.baselines) this.baselines = {};
+    const key = `${appId}:${resource}`;
+    this.baselines[key] = { ...this.baselines[key], ...baseline };
+    return this.baselines[key];
+  }
+
+  getBaselines(appId = null) {
+    if (!this.baselines) this.baselines = {};
+    if (appId) {
+      return Object.values(this.baselines).filter((b) => b.appId === appId);
+    }
+    return Object.values(this.baselines);
   }
 }
 

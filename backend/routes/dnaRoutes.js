@@ -12,8 +12,20 @@ const router = Router();
  */
 router.get('/baselines', (req, res) => {
   const { appId } = req.query || {};
-  const baselines = store.getBaselines(appId || null);
-  return res.json(ok(baselines));
+  if (appId) {
+    const app = store.findAppById(appId);
+    if (!app) {
+      return res.status(404).json(fail('APP_NOT_FOUND', `Application ${appId} not found`));
+    }
+    const baselines = RESOURCE_TYPES.map((resource) => getBaseline(appId, resource, store));
+    return res.json(ok(baselines));
+  }
+
+  const apps = store.apps || [];
+  const allBaselines = apps.flatMap((app) =>
+    RESOURCE_TYPES.map((resource) => getBaseline(app.id, resource, store))
+  );
+  return res.json(ok(allBaselines));
 });
 
 /**
@@ -79,7 +91,9 @@ router.post('/baselines/:appId/recalculate', (req, res) => {
   const appEvents = (store.events || []).filter((e) => e.appId === appId);
   const updatedBaselines = RESOURCE_TYPES.map((resource) => {
     const baseline = buildBaseline(appId, resource, appEvents, app);
-    store.updateBaseline(appId, resource, baseline);
+    if (typeof store.updateBaseline === 'function') {
+      store.updateBaseline(appId, resource, baseline);
+    }
     return baseline;
   });
 
